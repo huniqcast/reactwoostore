@@ -96,7 +96,7 @@ class HuniqcastStripe {
 
     public function rest_api_init() {
         register_rest_route('huniqcast-stripe/v1', '/payment-intent', [
-            'methods' => 'POST',
+            'methods' => 'GET',
             'callback' => array($this, 'payment_intent')
         ]);
     }
@@ -110,6 +110,9 @@ class HuniqcastStripe {
         //Read params
         $amount = $request->get_param('amount');
         
+        $stripeApiKey = get_option('woocommerce_stripe_settings');
+        $stripeTestPublisableKey = $stripeApiKey['test_secret_key'];
+                
         $currency = get_woocommerce_currency();
         $currency_symbol_html = html_entity_decode(get_woocommerce_currency_symbol());
         $amountWithoutCurrency = str_replace($currency_symbol_html, '', $amount);
@@ -117,9 +120,9 @@ class HuniqcastStripe {
         $paymentMethodId = $request->get_param('paymentMethodId');
         
         if(is_null($amount) || is_null($paymentMethodId)) return new \WP_REST_Response (array('error' => 'Please provide the amount and the payment method ID.'), 500);
-
+        
         //Setup stripe payment intent.
-        Stripe::setApiKey('sk_test_Msu6oek3IKtMUfnXAEe7EBPT00W5A9Hj5d');
+        Stripe::setApiKey($stripeTestPublisableKey);
 
 
         try{
