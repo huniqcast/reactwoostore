@@ -4,7 +4,7 @@
  *
  * Registers OrderItem WPObject type and queries
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.0.2
  */
 
@@ -17,7 +17,6 @@ use WPGraphQL\WooCommerce\Data\Factory;
  * Class Order_Item_Type
  */
 class Order_Item_Type {
-
 	/**
 	 * Register order item type
 	 */
@@ -242,7 +241,7 @@ class Order_Item_Type {
 		register_graphql_object_type(
 			'OrderItemTax',
 			array(
-				'description' => __( 'Order item tax statement', 'wp-graphql-woocommerce' ),
+				'description' => __( 'Order item tax statement', 'wp-graphql-woocommercer' ),
 				'fields'      => array(
 					'taxLineId' => array(
 						'type'        => array( 'non_null' => 'Int' ),

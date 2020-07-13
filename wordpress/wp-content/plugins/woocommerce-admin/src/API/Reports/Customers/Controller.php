@@ -11,8 +11,6 @@ namespace Automattic\WooCommerce\Admin\API\Reports\Customers;
 
 defined( 'ABSPATH' ) || exit;
 
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableTraits;
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableInterface;
 use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
 
 /**
@@ -21,18 +19,14 @@ use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
  * @package WooCommerce/API
  * @extends WC_REST_Reports_Controller
  */
-class Controller extends \WC_REST_Reports_Controller implements ExportableInterface {
-	/**
-	 * Exportable traits.
-	 */
-	use ExportableTraits;
+class Controller extends \WC_REST_Reports_Controller {
 
 	/**
 	 * Endpoint namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -131,33 +125,6 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		return $response;
 	}
 
-
-	/**
-	 * Get one report.
-	 *
-	 * @param WP_REST_Request $request Request data.
-	 * @return array|WP_Error
-	 */
-	public function get_item( $request ) {
-		$query_args              = $this->prepare_reports_query( $request );
-		$query_args['customers'] = array( $request->get_param( 'id' ) );
-		$customers_query         = new Query( $query_args );
-		$report_data             = $customers_query->get_data();
-
-		$data = array();
-
-		foreach ( $report_data->data as $customer_data ) {
-			$item   = $this->prepare_item_for_response( $customer_data, $request );
-			$data[] = $this->prepare_response_for_collection( $item );
-		}
-
-		$response = rest_ensure_response( $data );
-		$response->header( 'X-WP-Total', (int) $report_data->total );
-		$response->header( 'X-WP-TotalPages', (int) $report_data->pages );
-
-		return $response;
-	}
-
 	/**
 	 * Prepare a report object for serialization.
 	 *
@@ -166,14 +133,12 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 	 * @return WP_REST_Response
 	 */
 	public function prepare_item_for_response( $report, $request ) {
-		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
-		$data    = $this->add_additional_fields_to_object( $report, $request );
-		// Registered date is UTC.
-		$data['date_registered_gmt'] = wc_rest_prepare_date_response( $data['date_registered'] );
-		$data['date_registered']     = wc_rest_prepare_date_response( $data['date_registered'], false );
-		// Last active date is local time.
-		$data['date_last_active_gmt'] = wc_rest_prepare_date_response( $data['date_last_active'], false );
-		$data['date_last_active']     = wc_rest_prepare_date_response( $data['date_last_active'] );
+		$context                      = ! empty( $request['context'] ) ? $request['context'] : 'view';
+		$data                         = $this->add_additional_fields_to_object( $report, $request );
+		$data['date_registered_gmt']  = wc_rest_prepare_date_response( $data['date_registered'] );
+		$data['date_registered']      = wc_rest_prepare_date_response( $data['date_registered'], false );
+		$data['date_last_active_gmt'] = wc_rest_prepare_date_response( $data['date_last_active'] );
+		$data['date_last_active']     = wc_rest_prepare_date_response( $data['date_last_active'], false );
 		$data                         = $this->filter_response_by_context( $data, $context );
 
 		// Wrap the data in a response object.
@@ -203,11 +168,8 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		}
 
 		return array(
-			'customer'   => array(
-				'href' => rest_url( sprintf( '/%s/customers/%d', $this->namespace, $object['id'] ) ),
-			),
-			'collection' => array(
-				'href' => rest_url( sprintf( '/%s/customers', $this->namespace ) ),
+			'customer' => array(
+				'href' => rest_url( sprintf( '/%s/customers/%d', $this->namespace, $object['user_id'] ) ),
 			),
 		);
 	}
@@ -248,7 +210,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 					'readonly'    => true,
 				),
 				'country'              => array(
-					'description' => __( 'Country / Region.', 'woocommerce-admin' ),
+					'description' => __( 'Country.', 'woocommerce-admin' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -259,7 +221,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
-				'state'                => array(
+				'state'                 => array(
 					'description' => __( 'Region.', 'woocommerce-admin' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
@@ -562,50 +524,5 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		);
 
 		return $params;
-	}
-
-	/**
-	 * Get the column names for export.
-	 *
-	 * @return array Key value pair of Column ID => Label.
-	 */
-	public function get_export_columns() {
-		return array(
-			'name'            => __( 'Name', 'woocommerce-admin' ),
-			'username'        => __( 'Username', 'woocommerce-admin' ),
-			'last_active'     => __( 'Last Active', 'woocommerce-admin' ),
-			'registered'      => __( 'Sign Up', 'woocommerce-admin' ),
-			'email'           => __( 'Email', 'woocommerce-admin' ),
-			'orders_count'    => __( 'Orders', 'woocommerce-admin' ),
-			'total_spend'     => __( 'Total Spend', 'woocommerce-admin' ),
-			'avg_order_value' => __( 'AOV', 'woocommerce-admin' ),
-			'country'         => __( 'Country / Region', 'woocommerce-admin' ),
-			'city'            => __( 'City', 'woocommerce-admin' ),
-			'region'          => __( 'Region', 'woocommerce-admin' ),
-			'postcode'        => __( 'Postal Code', 'woocommerce-admin' ),
-		);
-	}
-
-	/**
-	 * Get the column values for export.
-	 *
-	 * @param array $item Single report item/row.
-	 * @return array Key value pair of Column ID => Row Value.
-	 */
-	public function prepare_item_for_export( $item ) {
-		return array(
-			'name'            => $item['name'],
-			'username'        => $item['username'],
-			'last_active'     => $item['date_last_active'],
-			'registered'      => $item['date_registered'],
-			'email'           => $item['email'],
-			'orders_count'    => $item['orders_count'],
-			'total_spend'     => self::csv_number_format( $item['total_spend'] ),
-			'avg_order_value' => self::csv_number_format( $item['avg_order_value'] ),
-			'country'         => $item['country'],
-			'city'            => $item['city'],
-			'region'          => $item['state'],
-			'postcode'        => $item['postcode'],
-		);
 	}
 }

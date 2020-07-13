@@ -16,13 +16,11 @@ use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
 use WPGraphQL\WooCommerce\Data\Mutation\Order_Mutation;
 use WPGraphQL\WooCommerce\Model\Order;
-use WC_Order_Factory;
 
 /**
  * Class Order_Delete
  */
 class Order_Delete {
-
 	/**
 	 * Registers mutation
 	 */
@@ -43,7 +41,7 @@ class Order_Delete {
 	 * @return array
 	 */
 	public static function get_input_fields() {
-		return array_merge(
+		$input_fields = array_merge(
 			array(
 				'id'          => array(
 					'type'        => 'ID',
@@ -59,6 +57,8 @@ class Order_Delete {
 				),
 			)
 		);
+
+		return $input_fields;
 	}
 
 	/**
@@ -129,10 +129,10 @@ class Order_Delete {
 			 * @param AppContext  $context Request AppContext instance.
 			 * @param ResolveInfo $info    Request ResolveInfo instance.
 			 */
-			do_action( 'graphql_woocommerce_before_order_delete', $order, $input, $context, $info );
+			do_action( 'woocommerce_graphql_before_order_delete', $order, $input, $context, $info );
 
 			// Delete order.
-			$success = Order_Mutation::purge( WC_Order_Factory::get_order( $order->ID ), $force_delete );
+			$success = Order_Mutation::purge( \WC_Order_Factory::get_order( $order->ID ), $force_delete );
 
 			if ( ! $success ) {
 				throw new UserError(
@@ -152,7 +152,7 @@ class Order_Delete {
 			 * @param AppContext  $context Request AppContext instance.
 			 * @param ResolveInfo $info    Request ResolveInfo instance.
 			 */
-			do_action( 'graphql_woocommerce_after_order_delete', $order, $input, $context, $info );
+			do_action( 'woocommerce_graphql_after_order_delete', $order, $input, $context, $info );
 
 			return array( 'order' => $order );
 		};

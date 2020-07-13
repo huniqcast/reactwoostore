@@ -12,17 +12,16 @@ namespace WPGraphQL\WooCommerce\Model;
 
 use GraphQL\Error\UserError;
 use WPGraphQL\Model\Model;
-use WP_Post_Type;
 
 /**
  * Class Crud_CPT
  */
 abstract class Crud_CPT extends Model {
-
 	/**
 	 * Stores the incoming post type object for the post being modeled
 	 *
-	 * @var null|WP_Post_Type $post_type_object
+	 * @var null|\WP_Post_Type $post_type_object
+	 * @access protected
 	 */
 	protected $post_type_object;
 
@@ -32,6 +31,9 @@ abstract class Crud_CPT extends Model {
 	 * @param array  $allowed_restricted_fields - Fields that can be resolved even if post is restricted.
 	 * @param string $post_type                 - Object post-type.
 	 * @param int    $post_id                   - Post ID.
+	 *
+	 * @access public
+	 * @return void
 	 */
 	public function __construct( $allowed_restricted_fields, $post_type, $post_id ) {
 		$author_id              = get_post_field( 'post_author', $post_id );
@@ -48,7 +50,6 @@ abstract class Crud_CPT extends Model {
 		setup_postdata( $post );
 
 		$restricted_cap = apply_filters(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 			$this->post_type_object->name . '_restricted_cap',
 			$this->get_restricted_cap()
 		);
@@ -61,6 +62,7 @@ abstract class Crud_CPT extends Model {
 	 *
 	 * @param string $method - function name.
 	 * @param array  $args  - function call arguments.
+	 *
 	 * @return mixed
 	 */
 	public function __call( $method, $args ) {
@@ -70,6 +72,7 @@ abstract class Crud_CPT extends Model {
 	/**
 	 * Determines if the data object should be considered private
 	 *
+	 * @access public
 	 * @return bool
 	 */
 	protected function is_private() {
@@ -89,6 +92,7 @@ abstract class Crud_CPT extends Model {
 	/**
 	 * Retrieve the cap to check if the data should be restricted for the crud object
 	 *
+	 * @access protected
 	 * @return string
 	 */
 	abstract public function get_restricted_cap();
@@ -96,10 +100,10 @@ abstract class Crud_CPT extends Model {
 	/**
 	 * Wrapper function for deleting
 	 *
-	 * @throws UserError Not authorized.
+	 * @param boolean $force_delete  Should the data be deleted permanently.
 	 *
-	 * @param boolean $force_delete Should the data be deleted permanently.
 	 * @return boolean
+	 * @throws UserError  Not authorized.
 	 */
 	public function delete( $force_delete = false ) {
 		if ( ! current_user_can( $this->post_type_object->cap->edit_posts ) ) {

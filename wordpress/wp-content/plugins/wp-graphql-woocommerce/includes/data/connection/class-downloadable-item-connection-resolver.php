@@ -15,7 +15,6 @@ use GraphQLRelay\Relay;
 use GraphQLRelay\Connection\ArrayConnection;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\Connection\AbstractConnectionResolver;
-use WPGraphQL\WooCommerce\Model\Customer;
 
 /**
  * Class Downloadable_Item_Connection_Resolver
@@ -104,12 +103,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 	 * @return \WP_Query
 	 */
 	public function get_query() {
-		$items = 0;
-		if ( is_a( $this->source, Customer::class ) ) {
-			$items = wc_get_customer_available_downloads( $this->source->ID );
-		} else {
-			$items = $this->source->downloadable_items;
-		}
+		$items = $this->source->downloadable_items;
 
 		if ( empty( $items ) ) {
 			return array();

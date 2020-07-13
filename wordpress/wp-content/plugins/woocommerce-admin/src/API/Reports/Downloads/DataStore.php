@@ -12,7 +12,6 @@ defined( 'ABSPATH' ) || exit;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
-use \Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 
 /**
  * API\Reports\Downloads\DataStore.
@@ -24,14 +23,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 *
 	 * @var string
 	 */
-	protected static $table_name = 'wc_download_log';
-
-	/**
-	 * Cache identifier.
-	 *
-	 * @var string
-	 */
-	protected $cache_key = 'downloads';
+	const TABLE_NAME = 'wc_download_log';
 
 	/**
 	 * Mapping columns to data type to return correct response types.
@@ -51,136 +43,139 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	);
 
 	/**
-	 * Data store context used to pass to filters.
+	 * SQL columns to select in the db query and their mapping to SQL code.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected $context = 'downloads';
+	protected $report_columns = array(
+		'id'          => 'download_log_id as id',
+		'date'        => 'timestamp as date_gmt',
+		'download_id' => 'product_permissions.download_id',
+		'product_id'  => 'product_permissions.product_id',
+		'order_id'    => 'product_permissions.order_id',
+		'user_id'     => 'product_permissions.user_id',
+		'ip_address'  => 'user_ip_address as ip_address',
+	);
 
 	/**
-	 * Assign report columns once full table name has been assigned.
+	 * Constructor
 	 */
-	protected function assign_report_columns() {
-		$this->report_columns = array(
-			'id'          => 'download_log_id as id',
-			'date'        => 'timestamp as date_gmt',
-			'download_id' => 'product_permissions.download_id',
-			'product_id'  => 'product_permissions.product_id',
-			'order_id'    => 'product_permissions.order_id',
-			'user_id'     => 'product_permissions.user_id',
-			'ip_address'  => 'user_ip_address as ip_address',
-		);
+	public function __construct() {
+		global $wpdb;
 	}
 
 	/**
 	 * Updates the database query with parameters used for downloads report.
 	 *
 	 * @param array $query_args Query arguments supplied by the user.
+	 * @return array            Array of parameters used for SQL query.
 	 */
-	protected function add_sql_query_params( $query_args ) {
+	protected function get_sql_query_params( $query_args ) {
 		global $wpdb;
 
-		$lookup_table     = self::get_db_table_name();
-		$permission_table = $wpdb->prefix . 'woocommerce_downloadable_product_permissions';
-		$operator         = $this->get_match_operator( $query_args );
-		$where_filters    = array();
-		$join             = "JOIN {$permission_table} as product_permissions ON {$lookup_table}.permission_id = product_permissions.permission_id";
+		$lookup_table  = $wpdb->prefix . self::TABLE_NAME;
+		$operator      = $this->get_match_operator( $query_args );
+		$where_filters = array();
 
-		$where_time = $this->add_time_period_sql_params( $query_args, $lookup_table );
-		if ( $where_time ) {
-			if ( isset( $this->subquery ) ) {
-				$this->subquery->add_sql_clause( 'where_time', $where_time );
-			} else {
-				$this->interval_query->add_sql_clause( 'where_time', $where_time );
-			}
+		$sql_query_params = $this->get_time_period_sql_params( $query_args, $lookup_table );
+		$sql_query_params = array_merge( $sql_query_params, $this->get_limit_sql_params( $query_args ) );
+
+		$included_products = $this->get_included_products( $query_args );
+		$excluded_products = $this->get_excluded_products( $query_args );
+		if ( $included_products ) {
+			$where_filters[] = " {$lookup_table}.permission_id IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.product_id IN ({$included_products})
+			)";
 		}
-		$this->get_limit_sql_params( $query_args );
 
-		$where_filters[] = $this->get_object_where_filter(
-			$lookup_table,
-			'permission_id',
-			$permission_table,
-			'product_id',
-			'IN',
-			$this->get_included_products( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$lookup_table,
-			'permission_id',
-			$permission_table,
-			'product_id',
-			'NOT IN',
-			$this->get_excluded_products( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$lookup_table,
-			'permission_id',
-			$permission_table,
-			'order_id',
-			'IN',
-			$this->get_included_orders( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$lookup_table,
-			'permission_id',
-			$permission_table,
-			'order_id',
-			'NOT IN',
-			$this->get_excluded_orders( $query_args )
-		);
+		if ( $excluded_products ) {
+			$where_filters[] = " {$lookup_table}.permission_id NOT IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.product_id IN ({$excluded_products})
+			)";
+		}
+
+		$included_orders = $this->get_included_orders( $query_args );
+		$excluded_orders = $this->get_excluded_orders( $query_args );
+		if ( $included_orders ) {
+			$where_filters[] = " {$lookup_table}.permission_id IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.order_id IN ({$included_orders})
+			)";
+		}
+
+		if ( $excluded_orders ) {
+			$where_filters[] = " {$lookup_table}.permission_id NOT IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.order_id IN ({$excluded_orders})
+			)";
+		}
 
 		$customer_lookup_table = $wpdb->prefix . 'wc_customer_lookup';
-		$customer_lookup       = "SELECT {$customer_lookup_table}.user_id FROM {$customer_lookup_table} WHERE {$customer_lookup_table}.customer_id IN (%s)";
 		$included_customers    = $this->get_included_customers( $query_args );
 		$excluded_customers    = $this->get_excluded_customers( $query_args );
 		if ( $included_customers ) {
-			$where_filters[] = $this->get_object_where_filter(
-				$lookup_table,
-				'permission_id',
-				$permission_table,
-				'user_id',
-				'IN',
-				sprintf( $customer_lookup, $included_customers )
-			);
+			$where_filters[] = " {$lookup_table}.permission_id IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.user_id IN (
+					SELECT {$customer_lookup_table}.user_id FROM {$customer_lookup_table} WHERE {$customer_lookup_table}.customer_id IN ({$included_customers})
+				)
+			)";
 		}
 
 		if ( $excluded_customers ) {
-			$where_filters[] = $this->get_object_where_filter(
-				$lookup_table,
-				'permission_id',
-				$permission_table,
-				'user_id',
-				'NOT IN',
-				sprintf( $customer_lookup, $excluded_customers )
-			);
+			$where_filters[] = " {$lookup_table}.permission_id NOT IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}woocommerce_downloadable_product_permissions.permission_id
+			FROM
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions
+			WHERE
+				{$wpdb->prefix}woocommerce_downloadable_product_permissions.user_id IN (
+					SELECT {$customer_lookup_table}.user_id FROM {$customer_lookup_table} WHERE {$customer_lookup_table}.customer_id IN ({$excluded_customers})
+				)
+			)";
 		}
 
 		$included_ip_addresses = $this->get_included_ip_addresses( $query_args );
 		$excluded_ip_addresses = $this->get_excluded_ip_addresses( $query_args );
 		if ( $included_ip_addresses ) {
-			$where_filters[] = "{$lookup_table}.user_ip_address IN ('{$included_ip_addresses}')";
+			$where_filters[] = " {$lookup_table}.user_ip_address IN ('{$included_ip_addresses}')";
 		}
 
 		if ( $excluded_ip_addresses ) {
-			$where_filters[] = "{$lookup_table}.user_ip_address NOT IN ('{$excluded_ip_addresses}')";
+			$where_filters[] = " {$lookup_table}.user_ip_address NOT IN ('{$excluded_ip_addresses}')";
 		}
 
-		$where_filters   = array_filter( $where_filters );
 		$where_subclause = implode( " $operator ", $where_filters );
 		if ( $where_subclause ) {
-			if ( isset( $this->subquery ) ) {
-				$this->subquery->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			} else {
-				$this->interval_query->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			}
+			$sql_query_params['where_clause'] .= " AND ( $where_subclause )";
 		}
 
-		if ( isset( $this->subquery ) ) {
-			$this->subquery->add_sql_clause( 'join', $join );
-		} else {
-			$this->interval_query->add_sql_clause( 'join', $join );
-		}
-		$this->add_order_by( $query_args );
+		$sql_query_params['from_clause'] .= " JOIN {$wpdb->prefix}woocommerce_downloadable_product_permissions as product_permissions ON {$lookup_table}.permission_id = product_permissions.permission_id";
+		$sql_query_params                 = $this->get_order_by( $query_args, $sql_query_params );
+
+		return $sql_query_params;
 	}
 
 	/**
@@ -190,10 +185,16 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @return string
 	 */
 	protected function get_included_ip_addresses( $query_args ) {
+		$included_ips_str = '';
+
 		if ( isset( $query_args['ip_address_includes'] ) && is_array( $query_args['ip_address_includes'] ) && count( $query_args['ip_address_includes'] ) > 0 ) {
-			$query_args['ip_address_includes'] = array_map( 'esc_sql', $query_args['ip_address_includes'] );
+			$ip_includes = array();
+			foreach ( $query_args['ip_address_includes'] as $ip ) {
+				$ip_includes[] = esc_sql( $ip );
+			}
+			$included_ips_str = implode( "','", $ip_includes );
 		}
-		return self::get_filtered_ids( $query_args, 'ip_address_includes', "','" );
+		return $included_ips_str;
 	}
 
 	/**
@@ -203,10 +204,16 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @return string
 	 */
 	protected function get_excluded_ip_addresses( $query_args ) {
+		$excluded_ips_str = '';
+
 		if ( isset( $query_args['ip_address_excludes'] ) && is_array( $query_args['ip_address_excludes'] ) && count( $query_args['ip_address_excludes'] ) > 0 ) {
-			$query_args['ip_address_excludes'] = array_map( 'esc_sql', $query_args['ip_address_excludes'] );
+			$ip_excludes = array();
+			foreach ( $query_args['ip_address_excludes'] as $ip ) {
+				$ip_excludes[] = esc_sql( $ip );
+			}
+			$excluded_ips_str = implode( ',', $ip_excludes );
 		}
-		return self::get_filtered_ids( $query_args, 'ip_address_excludes', "','" );
+		return $excluded_ips_str;
 	}
 
 	/**
@@ -216,7 +223,12 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @return string
 	 */
 	protected function get_included_customers( $query_args ) {
-		return self::get_filtered_ids( $query_args, 'customer_includes' );
+		$included_customers_str = '';
+
+		if ( isset( $query_args['customer_includes'] ) && is_array( $query_args['customer_includes'] ) && count( $query_args['customer_includes'] ) > 0 ) {
+			$included_customers_str = implode( ',', $query_args['customer_includes'] );
+		}
+		return $included_customers_str;
 	}
 
 	/**
@@ -226,51 +238,67 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * @return string
 	 */
 	protected function get_excluded_customers( $query_args ) {
-		return self::get_filtered_ids( $query_args, 'customer_excludes' );
+		$excluded_customer_str = '';
+
+		if ( isset( $query_args['customer_excludes'] ) && is_array( $query_args['customer_excludes'] ) && count( $query_args['customer_excludes'] ) > 0 ) {
+			$excluded_customer_str = implode( ',', $query_args['customer_excludes'] );
+		}
+		return $excluded_customer_str;
 	}
 
 	/**
-	 * Gets WHERE time clause of SQL request with date-related constraints.
+	 * Fills WHERE clause of SQL request with date-related constraints.
 	 *
 	 * @param array  $query_args Parameters supplied by the user.
 	 * @param string $table_name Name of the db table relevant for the date constraint.
-	 * @return string
+	 * @return array
 	 */
-	protected function add_time_period_sql_params( $query_args, $table_name ) {
-		$where_time = '';
+	protected function get_time_period_sql_params( $query_args, $table_name ) {
+		$sql_query = array(
+			'from_clause'       => '',
+			'where_time_clause' => '',
+			'where_clause'      => '',
+		);
+
 		if ( $query_args['before'] ) {
-			$datetime_str = $query_args['before']->format( TimeInterval::$sql_datetime_format );
-			$where_time  .= " AND {$table_name}.timestamp <= '$datetime_str'";
+			$datetime_str                    = $query_args['before']->format( TimeInterval::$sql_datetime_format );
+			$sql_query['where_time_clause'] .= " AND {$table_name}.timestamp <= '$datetime_str'";
 
 		}
 
 		if ( $query_args['after'] ) {
-			$datetime_str = $query_args['after']->format( TimeInterval::$sql_datetime_format );
-			$where_time  .= " AND {$table_name}.timestamp >= '$datetime_str'";
+			$datetime_str                    = $query_args['after']->format( TimeInterval::$sql_datetime_format );
+			$sql_query['where_time_clause'] .= " AND {$table_name}.timestamp >= '$datetime_str'";
 		}
 
-		return $where_time;
+		return $sql_query;
 	}
 
 	/**
 	 * Fills ORDER BY clause of SQL request based on user supplied parameters.
 	 *
 	 * @param array $query_args Parameters supplied by the user.
+	 * @param array $sql_query Current SQL query array.
+	 * @return array
 	 */
-	protected function add_order_by( $query_args ) {
+	protected function get_order_by( $query_args, $sql_query ) {
 		global $wpdb;
-		$this->clear_sql_clause( 'order_by' );
-		$order_by = '';
+		$sql_query['order_by_clause'] = '';
 		if ( isset( $query_args['orderby'] ) ) {
-			$order_by = $this->normalize_order_by( $query_args['orderby'] );
-			$this->add_sql_clause( 'order_by', $order_by );
+			$sql_query['order_by_clause'] = $this->normalize_order_by( $query_args['orderby'] );
 		}
 
-		if ( false !== strpos( $order_by, '_products' ) ) {
-			$this->subquery->add_sql_clause( 'join', "JOIN {$wpdb->posts} AS _products ON product_permissions.product_id = _products.ID" );
+		if ( false !== strpos( $sql_query['order_by_clause'], '_products' ) ) {
+			$sql_query['from_clause'] .= " JOIN {$wpdb->prefix}posts AS _products ON product_permissions.product_id = _products.ID";
 		}
 
-		$this->add_orderby_order_clause( $query_args, $this );
+		if ( isset( $query_args['order'] ) ) {
+			$sql_query['order_by_clause'] .= ' ' . $query_args['order'];
+		} else {
+			$sql_query['order_by_clause'] .= ' DESC';
+		}
+
+		return $sql_query;
 	}
 
 	/**
@@ -282,7 +310,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	public function get_data( $query_args ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		// These defaults are only partially applied when used via REST API, as that has its own defaults.
 		$defaults   = array(
@@ -297,16 +325,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$query_args = wp_parse_args( $query_args, $defaults );
 		$this->normalize_timezones( $query_args, $defaults );
 
-		/*
-		 * We need to get the cache key here because
-		 * parent::update_intervals_sql_params() modifies $query_args.
-		 */
 		$cache_key = $this->get_cache_key( $query_args );
-		$data      = $this->get_cached_data( $cache_key );
+		$data      = wp_cache_get( $cache_key, $this->cache_group );
 
 		if ( false === $data ) {
-			$this->initialize_queries();
-
 			$data = (object) array(
 				'data'    => array(),
 				'total'   => 0,
@@ -314,28 +336,46 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no' => 0,
 			);
 
-			$selections = $this->selected_columns( $query_args );
-			$this->add_sql_query_params( $query_args );
+			$selections       = $this->selected_columns( $query_args );
+			$sql_query_params = $this->get_sql_query_params( $query_args );
 
 			$db_records_count = (int) $wpdb->get_var(
 				"SELECT COUNT(*) FROM (
-					{$this->subquery->get_query_statement()}
-				) AS tt"
+							SELECT
+								{$table_name}.download_log_id
+							FROM
+								{$table_name}
+								{$sql_query_params['from_clause']}
+							WHERE
+								1=1
+								{$sql_query_params['where_time_clause']}
+								{$sql_query_params['where_clause']}
+							GROUP BY
+								{$table_name}.download_log_id
+					  		) AS tt"
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
-			$params      = $this->get_limit_params( $query_args );
-			$total_pages = (int) ceil( $db_records_count / $params['per_page'] );
+			$total_pages = (int) ceil( $db_records_count / $sql_query_params['per_page'] );
 			if ( $query_args['page'] < 1 || $query_args['page'] > $total_pages ) {
 				return $data;
 			}
 
-			$this->subquery->clear_sql_clause( 'select' );
-			$this->subquery->add_sql_clause( 'select', $selections );
-			$this->subquery->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
-			$this->subquery->add_sql_clause( 'limit', $this->get_sql_clause( 'limit' ) );
-
 			$download_data = $wpdb->get_results(
-				$this->subquery->get_query_statement(),
+				"SELECT
+						{$selections}
+					FROM
+						{$table_name}
+						{$sql_query_params['from_clause']}
+					WHERE
+						1=1
+						{$sql_query_params['where_time_clause']}
+						{$sql_query_params['where_clause']}
+					GROUP BY
+						{$table_name}.download_log_id
+					ORDER BY
+						{$sql_query_params['order_by_clause']}
+					{$sql_query_params['limit']}
+					",
 				ARRAY_A
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
@@ -351,10 +391,20 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no' => (int) $query_args['page'],
 			);
 
-			$this->set_cached_data( $cache_key, $data );
+			wp_cache_set( $cache_key, $data, $this->cache_group );
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Returns string to be used as cache key for the data.
+	 *
+	 * @param array $params Query parameters.
+	 * @return string
+	 */
+	protected function get_cache_key( $params ) {
+		return 'woocommerce_' . self::TABLE_NAME . '_' . md5( wp_json_encode( $params ) );
 	}
 
 	/**
@@ -375,17 +425,5 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		}
 
 		return $order_by;
-	}
-
-	/**
-	 * Initialize query objects.
-	 */
-	protected function initialize_queries() {
-		$this->clear_all_clauses();
-		$table_name     = self::get_db_table_name();
-		$this->subquery = new SqlQuery( $this->context . '_subquery' );
-		$this->subquery->add_sql_clause( 'from', $table_name );
-		$this->subquery->add_sql_clause( 'select', "{$table_name}.download_log_id" );
-		$this->subquery->add_sql_clause( 'group_by', "{$table_name}.download_log_id" );
 	}
 }

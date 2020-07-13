@@ -6,10 +6,13 @@ import { Component, Fragment } from '@wordpress/element';
 import { Disabled, PanelBody } from '@wordpress/components';
 import { InspectorControls, ServerSideRender } from '@wordpress/editor';
 import PropTypes from 'prop-types';
-import GridContentControl from '@woocommerce/block-components/grid-content-control';
-import GridLayoutControl from '@woocommerce/block-components/grid-layout-control';
-import ProductCategoryControl from '@woocommerce/block-components/product-category-control';
-import { gridBlockPreview } from '@woocommerce/resource-previews';
+
+/**
+ * Internal dependencies
+ */
+import GridContentControl from '../../components/grid-content-control';
+import GridLayoutControl from '../../components/grid-layout-control';
+import ProductCategoryControl from '../../components/product-category-control';
 
 /**
  * Component to handle edit mode of "Best Selling Products".
@@ -29,7 +32,7 @@ class ProductBestSellersBlock extends Component {
 		return (
 			<InspectorControls key="inspector">
 				<PanelBody
-					title={ __( 'Layout', 'woocommerce' ) }
+					title={ __( 'Layout', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<GridLayoutControl
@@ -40,20 +43,18 @@ class ProductBestSellersBlock extends Component {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Content', 'woocommerce' ) }
+					title={ __( 'Content', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<GridContentControl
 						settings={ contentVisibility }
-						onChange={ ( value ) =>
-							setAttributes( { contentVisibility: value } )
-						}
+						onChange={ ( value ) => setAttributes( { contentVisibility: value } ) }
 					/>
 				</PanelBody>
 				<PanelBody
 					title={ __(
 						'Filter by Product Category',
-						'woocommerce'
+						'woo-gutenberg-products-block'
 					) }
 					initialOpen={ false }
 				>
@@ -76,18 +77,11 @@ class ProductBestSellersBlock extends Component {
 	render() {
 		const { attributes, name } = this.props;
 
-		if ( attributes.isPreview ) {
-			return gridBlockPreview;
-		}
-
 		return (
 			<Fragment>
 				{ this.getInspectorControls() }
 				<Disabled>
-					<ServerSideRender
-						block={ name }
-						attributes={ attributes }
-					/>
+					<ServerSideRender block={ name } attributes={ attributes } />
 				</Disabled>
 			</Fragment>
 		);

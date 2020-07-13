@@ -538,7 +538,7 @@ function wc_modify_map_meta_cap( $caps, $cap, $user_id, $args ) {
 						$caps[] = 'do_not_allow';
 					} elseif ( wc_current_user_has_role( 'shop_manager' ) ) {
 						// Shop managers can only edit customer info.
-						$userdata                    = get_userdata( $args[0] );
+						$userdata = get_userdata( $args[0] );
 						$shop_manager_editable_roles = apply_filters( 'woocommerce_shop_manager_editable_roles', array( 'customer' ) );
 						if ( property_exists( $userdata, 'roles' ) && ! empty( $userdata->roles ) && ! array_intersect( $userdata->roles, $shop_manager_editable_roles ) ) {
 							$caps[] = 'do_not_allow';
@@ -721,8 +721,7 @@ function wc_disable_author_archives_for_customers() {
 		$user = get_user_by( 'id', $author );
 
 		if ( user_can( $user, 'customer' ) && ! user_can( $user, 'edit_posts' ) ) {
-			wp_safe_redirect( wc_get_page_permalink( 'shop' ) );
-			exit;
+			wp_redirect( wc_get_page_permalink( 'shop' ) );
 		}
 	}
 }
@@ -897,7 +896,7 @@ function wc_update_user_last_active( $user_id ) {
 	if ( ! $user_id ) {
 		return;
 	}
-	update_user_meta( $user_id, 'wc_last_active', (string) strtotime( date( 'Y-m-d', time() ) ) );
+	update_user_meta( $user_id, 'wc_last_active', (string) strtotime( date( 'Y-m-d', current_time( 'timestamp', true ) ) ) );
 }
 
 /**

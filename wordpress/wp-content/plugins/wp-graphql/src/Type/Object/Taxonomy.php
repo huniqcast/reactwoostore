@@ -98,7 +98,7 @@ class Taxonomy {
 						'args'        => [
 							'types' => [
 								'type'        => [
-									'list_of' => 'ContentTypeEnum',
+									'list_of' => 'PostTypeEnum',
 								],
 								'description' => __( 'Select which post types to limit the results to', 'wp-graphql' ),
 							],
@@ -127,12 +127,12 @@ class Taxonomy {
 					],
 					'connectedPostTypes'     => [
 						'type'        => [
-							'list_of' => 'ContentType',
+							'list_of' => 'PostType',
 						],
 						'args'        => [
 							'types' => [
 								'type'        => [
-									'list_of' => 'ContentTypeEnum',
+									'list_of' => 'PostTypeEnum',
 								],
 								'description' => __( 'Select which post types to limit the results to', 'wp-graphql' ),
 							],

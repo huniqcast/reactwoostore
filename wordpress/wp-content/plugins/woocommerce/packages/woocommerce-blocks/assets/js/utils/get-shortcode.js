@@ -1,8 +1,3 @@
-/**
- * External dependencies
- */
-import { DEFAULT_COLUMNS, DEFAULT_ROWS } from '@woocommerce/block-settings';
-
 export default function getShortcode( props, name ) {
 	const blockAttributes = props.attributes;
 	const {
@@ -13,8 +8,8 @@ export default function getShortcode( props, name ) {
 		orderby,
 		products,
 	} = blockAttributes;
-	const columns = blockAttributes.columns || DEFAULT_COLUMNS;
-	const rows = blockAttributes.rows || DEFAULT_ROWS;
+	const columns = blockAttributes.columns || wc_product_block_data.default_columns;
+	const rows = blockAttributes.rows || wc_product_block_data.default_rows;
 
 	const shortcodeAtts = new Map();
 	shortcodeAtts.set( 'limit', rows * columns );
@@ -22,30 +17,27 @@ export default function getShortcode( props, name ) {
 
 	if ( categories && categories.length ) {
 		shortcodeAtts.set( 'category', categories.join( ',' ) );
-		if ( catOperator && catOperator === 'all' ) {
+		if ( catOperator && 'all' === catOperator ) {
 			shortcodeAtts.set( 'cat_operator', 'AND' );
 		}
 	}
 
 	if ( attributes && attributes.length ) {
-		shortcodeAtts.set(
-			'terms',
-			attributes.map( ( { id } ) => id ).join( ',' )
-		);
+		shortcodeAtts.set( 'terms', attributes.map( ( { id } ) => id ).join( ',' ) );
 		shortcodeAtts.set( 'attribute', attributes[ 0 ].attr_slug );
-		if ( attrOperator && attrOperator === 'all' ) {
+		if ( attrOperator && 'all' === attrOperator ) {
 			shortcodeAtts.set( 'terms_operator', 'AND' );
 		}
 	}
 
 	if ( orderby ) {
-		if ( orderby === 'price_desc' ) {
+		if ( 'price_desc' === orderby ) {
 			shortcodeAtts.set( 'orderby', 'price' );
 			shortcodeAtts.set( 'order', 'DESC' );
-		} else if ( orderby === 'price_asc' ) {
+		} else if ( 'price_asc' === orderby ) {
 			shortcodeAtts.set( 'orderby', 'price' );
 			shortcodeAtts.set( 'order', 'ASC' );
-		} else if ( orderby === 'date' ) {
+		} else if ( 'date' === orderby ) {
 			shortcodeAtts.set( 'orderby', 'date' );
 			shortcodeAtts.set( 'order', 'DESC' );
 		} else {
@@ -90,7 +82,6 @@ export default function getShortcode( props, name ) {
 	// Build the shortcode string out of the set shortcode attributes.
 	let shortcode = '[products';
 	for ( const [ key, value ] of shortcodeAtts ) {
-		/* eslint-disable-line */
 		shortcode += ' ' + key + '="' + value + '"';
 	}
 	shortcode += ']';

@@ -19,7 +19,6 @@ use WPGraphQL\WooCommerce\Data\Mutation\Cart_Mutation;
  * Class - Cart_Remove_Items
  */
 class Cart_Remove_Items {
-
 	/**
 	 * Registers mutation
 	 */
@@ -40,7 +39,7 @@ class Cart_Remove_Items {
 	 * @return array
 	 */
 	public static function get_input_fields() {
-		return array(
+		$input_fields = array(
 			'keys' => array(
 				'type'        => array( 'list_of' => 'ID' ),
 				'description' => __( 'Item keys of the items being removed', 'wp-graphql-woocommerce' ),
@@ -50,6 +49,8 @@ class Cart_Remove_Items {
 				'description' => __( 'Remove all cart items', 'wp-graphql-woocommerce' ),
 			),
 		);
+
+		return $input_fields;
 	}
 
 	/**

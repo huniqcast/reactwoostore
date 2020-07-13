@@ -12,7 +12,6 @@ namespace WPGraphQL\WooCommerce;
  * Class WooCommerce_Filters
  */
 class WooCommerce_Filters {
-
 	/**
 	 * Stores instance session header name.
 	 *
@@ -24,8 +23,7 @@ class WooCommerce_Filters {
 	 * Initializes hooks for WooCommerce-related utilities.
 	 */
 	public static function setup() {
-		self::$session_header = apply_filters( 'graphql_woocommerce_cart_session_http_header', 'woocommerce-session' );
-
+		self::$session_header = apply_filters( 'graphql_woo_cart_session_http_header', 'woocommerce-session' );
 		// Check if request is a GraphQL POST request.
 		if ( ! defined( 'NO_QL_SESSION_HANDLER' ) ) {
 			add_filter( 'woocommerce_session_handler', array( __CLASS__, 'woocommerce_session_handler' ) );
@@ -38,6 +36,7 @@ class WooCommerce_Filters {
 	 * WooCommerce Session Handler callback
 	 *
 	 * @param string $session_class  Class name of WooCommerce Session Handler.
+	 *
 	 * @return string
 	 */
 	public static function woocommerce_session_handler( $session_class ) {
@@ -52,9 +51,10 @@ class WooCommerce_Filters {
 	 * Append session header to the exposed headers in GraphQL responses
 	 *
 	 * @param array $headers GraphQL responser headers.
+	 *
 	 * @return array
 	 */
-	public static function add_session_header_to_expose_headers( array $headers ) {
+	public static function add_session_header_to_expose_headers( $headers ) {
 		if ( empty( $headers['Access-Control-Expose-Headers'] ) ) {
 			$headers['Access-Control-Expose-Headers'] = self::$session_header;
 		} else {
@@ -68,6 +68,7 @@ class WooCommerce_Filters {
 	 * Append the session header to the allowed headers in GraphQL responses
 	 *
 	 * @param array $allowed_headers The existing allowed headers.
+	 *
 	 * @return array
 	 */
 	public static function add_session_header_to_allow_headers( array $allowed_headers ) {

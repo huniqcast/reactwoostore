@@ -11,23 +11,20 @@ namespace Automattic\WooCommerce\Admin\API\Reports\Categories;
 
 defined( 'ABSPATH' ) || exit;
 
-use \Automattic\WooCommerce\Admin\API\Reports\Controller as ReportsController;
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableInterface;
-
 /**
  * REST API Reports categories controller class.
  *
  * @package WooCommerce/API
  * @extends \Automattic\WooCommerce\Admin\API\Reports\Controller
  */
-class Controller extends ReportsController implements ExportableInterface {
+class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 
 	/**
 	 * Endpoint namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -179,7 +176,7 @@ class Controller extends ReportsController implements ExportableInterface {
 					'readonly'    => true,
 				),
 				'net_revenue'    => array(
-					'description' => __( 'Total Sales.', 'woocommerce-admin' ),
+					'description' => __( 'Gross revenue.', 'woocommerce-admin' ),
 					'type'        => 'number',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -320,36 +317,5 @@ class Controller extends ReportsController implements ExportableInterface {
 		);
 
 		return $params;
-	}
-
-	/**
-	 * Get the column names for export.
-	 *
-	 * @return array Key value pair of Column ID => Label.
-	 */
-	public function get_export_columns() {
-		return array(
-			'category'       => __( 'Category', 'woocommerce-admin' ),
-			'items_sold'     => __( 'Items Sold', 'woocommerce-admin' ),
-			'net_revenue'    => __( 'Net Revenue', 'woocommerce-admin' ),
-			'products_count' => __( 'Products', 'woocommerce-admin' ),
-			'orders_count'   => __( 'Orders', 'woocommerce-admin' ),
-		);
-	}
-
-	/**
-	 * Get the column values for export.
-	 *
-	 * @param array $item Single report item/row.
-	 * @return array Key value pair of Column ID => Row Value.
-	 */
-	public function prepare_item_for_export( $item ) {
-		return array(
-			'category'       => $item['extended_info']['name'],
-			'items_sold'     => $item['items_sold'],
-			'net_revenue'    => $item['net_revenue'],
-			'products_count' => $item['products_count'],
-			'orders_count'   => $item['orders_count'],
-		);
 	}
 }

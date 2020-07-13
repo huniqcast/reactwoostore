@@ -17,13 +17,11 @@ use WPGraphQL\WooCommerce\Data\Mutation\Checkout_Mutation;
 use WPGraphQL\WooCommerce\Data\Mutation\Order_Mutation;
 use WPGraphQL\WooCommerce\Model\Order;
 use WPGraphQL\WooCommerce\Model\Customer;
-use Exception;
 
 /**
  * Class Checkout
  */
 class Checkout {
-
 	/**
 	 * Registers mutation
 	 */
@@ -138,7 +136,7 @@ class Checkout {
 				 * @param AppContext  $context Request AppContext instance.
 				 * @param ResolveInfo $info    Request ResolveInfo instance.
 				 */
-				do_action( 'graphql_woocommerce_before_checkout', $args, $input, $context, $info );
+				do_action( 'woocommerce_graphql_before_checkout', $args, $input, $context, $info );
 
 				$order_id = Checkout_Mutation::process_checkout( $args, $input, $context, $info, $results );
 
@@ -159,10 +157,10 @@ class Checkout {
 				 * @param AppContext  $context Request AppContext instance.
 				 * @param ResolveInfo $info    Request ResolveInfo instance.
 				 */
-				do_action( 'graphql_woocommerce_after_checkout', $order_id, $input, $context, $info );
+				do_action( 'woocommerce_graphql_after_checkout', $order_id, $input, $context, $info );
 
 				return array_merge( array( 'id' => $order_id ), $results );
-			} catch ( Exception $e ) {
+			} catch ( \Exception $e ) {
 				Order_Mutation::purge( $order );
 				throw new UserError( $e->getMessage() );
 			}

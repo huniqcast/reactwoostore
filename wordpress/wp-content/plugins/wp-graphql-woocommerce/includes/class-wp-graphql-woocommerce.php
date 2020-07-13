@@ -10,7 +10,6 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
-
 	/**
 	 * Class WP_GraphQL_WooCommerce
 	 */
@@ -20,13 +19,12 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 		 * Stores the instance of the WP_GraphQL_WooCommerce class
 		 *
 		 * @var WP_GraphQL_WooCommerce The one true WP_GraphQL_WooCommerce
+		 * @access private
 		 */
 		private static $instance;
 
 		/**
-		 * Returns a WP_GraphQL_WooCommerce Instance.
-		 *
-		 * @return WP_GraphQL_WooCommerce
+		 * WP_GraphQL_WooCommerce Constructor
 		 */
 		public static function instance() {
 			if ( ! isset( self::$instance ) && ! ( is_a( self::$instance, __CLASS__ ) ) ) {
@@ -42,7 +40,9 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 			 */
 			do_action( 'graphql_woocommerce_init', self::$instance );
 
-			// Return the WPGraphQLWooCommerce Instance.
+			/**
+			 * Return the WPGraphQLWooCommerce Instance
+			 */
 			return self::$instance;
 		}
 
@@ -53,7 +53,7 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 		 */
 		public static function get_post_types() {
 			return apply_filters(
-				'graphql_woocommerce_post_types',
+				'register_graphql_wc_post_types',
 				array(
 					'product',
 					'product_variation',
@@ -66,12 +66,10 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 
 		/**
 		 * Returns WooCommerce product types to be exposed to the GraphQL schema.
-		 *
-		 * @return array
 		 */
 		public static function get_enabled_product_types() {
 			return apply_filters(
-				'graphql_woocommerce_product_types',
+				'graphql_enabled_wc_product_types',
 				array(
 					'simple'   => 'SimpleProduct',
 					'variable' => 'VariableProduct',
@@ -102,7 +100,7 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 			 * @param array $attributes Product attributes being passed.
 			 */
 			return apply_filters(
-				'graphql_woocommerce_product_attributes_taxonomies',
+				'register_graphql_wc_product_attributes_taxonomies',
 				$attributes
 			);
 		}
@@ -113,6 +111,8 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 		 * therefore, we don't want the object to be cloned.
 		 *
 		 * @since  0.0.1
+		 * @access public
+		 * @return void
 		 */
 		public function __clone() {
 			// Cloning instances of the class is forbidden.
@@ -123,6 +123,8 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 		 * Disable unserializing of the class.
 		 *
 		 * @since  0.0.1
+		 * @access protected
+		 * @return void
 		 */
 		public function __wakeup() {
 			// De-serializing instances of the class is forbidden.
@@ -133,11 +135,14 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 		 * Include required files.
 		 * Uses composer's autoload
 		 *
+		 * @access private
 		 * @since  0.0.1
+		 * @return void
 		 */
 		private function includes() {
-
-			// Autoload Required Classes.
+			/**
+			 * Autoload Required Classes
+			 */
 			if ( defined( 'WPGRAPHQL_WOOCOMMERCE_AUTOLOAD' ) && false !== WPGRAPHQL_WOOCOMMERCE_AUTOLOAD ) {
 				require_once WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR . 'vendor/autoload.php';
 			}
@@ -171,5 +176,4 @@ if ( ! class_exists( 'WP_GraphQL_WooCommerce' ) ) :
 			add_action( 'graphql_register_types', array( $registry, 'init' ), 10, 1 );
 		}
 	}
-
 endif;

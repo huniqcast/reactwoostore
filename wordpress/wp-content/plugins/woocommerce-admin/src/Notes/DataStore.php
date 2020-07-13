@@ -19,7 +19,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 	 * @param WC_Admin_Note $note Admin note.
 	 */
 	public function create( &$note ) {
-		$date_created = time();
+		$date_created = current_time( 'timestamp', 1 );
 		$note->set_date_created( $date_created );
 
 		global $wpdb;
@@ -52,14 +52,14 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		 *
 		 * @param int $note_id Note ID.
 		 */
-		do_action( 'woocommerce_note_created', $note_id );
+		do_action( 'woocommerce_new_note', $note_id );
 	}
 
 	/**
 	 * Method to read a note.
 	 *
 	 * @param WC_Admin_Note $note Admin note.
-	 * @throws \Exception Throws exception when invalid data is found.
+	 * @throws Exception Throws exception when invalid data is found.
 	 */
 	public function read( &$note ) {
 		global $wpdb;
@@ -87,7 +87,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 			 *
 			 * @param int $note_id Note ID.
 			 */
-			do_action( 'woocommerce_note_loaded', $note );
+			do_action( 'woocommerce_admin_note_loaded', $note );
 		} elseif ( $note_row ) {
 			$note->set_name( $note_row->name );
 			$note->set_type( $note_row->type );
@@ -95,16 +95,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 			$note->set_title( $note_row->title );
 			$note->set_content( $note_row->content );
 			$note->set_icon( $note_row->icon );
-
-			// The default for 'content_value' used to be an array, so there might be rows with invalid data!
-			$content_data = json_decode( $note_row->content_data );
-			if ( ! $content_data ) {
-				$content_data = new \stdClass();
-			} elseif ( is_array( $content_data ) ) {
-				$content_data = (object) $content_data;
-			}
-			$note->set_content_data( $content_data );
-
+			$note->set_content_data( json_decode( $note_row->content_data ) );
 			$note->set_status( $note_row->status );
 			$note->set_source( $note_row->source );
 			$note->set_date_created( $note_row->date_created );
@@ -119,7 +110,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 			 *
 			 * @param int $note_id Note ID.
 			 */
-			do_action( 'woocommerce_note_loaded', $note );
+			do_action( 'woocommerce_admin_note_loaded', $note );
 		} else {
 			throw new \Exception( __( 'Invalid data store for admin note.', 'woocommerce-admin' ) );
 		}
@@ -175,7 +166,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		 *
 		 * @param int $note_id Note ID.
 		 */
-		do_action( 'woocommerce_note_updated', $note->get_id() );
+		do_action( 'woocommerce_update_note', $note->get_id() );
 	}
 
 	/**
@@ -194,11 +185,11 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		}
 
 		/**
-		 * Fires when an admin note is deleted.
+		 * Fires when an admin note is updated.
 		 *
 		 * @param int $note_id Note ID.
 		 */
-		do_action( 'woocommerce_note_deleted', $note_id );
+		do_action( 'woocommerce_delete_note', $note_id );
 	}
 
 	/**
@@ -253,31 +244,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 			return false;
 		}
 
-		// Process action removal. Actions are removed from
-		// the note if they aren't part of the changeset.
-		// See WC_Admin_Note::add_action().
-		$changed_actions = $note->get_actions( 'edit' );
-		$actions_to_keep = array();
-
-		foreach ( $changed_actions as $action ) {
-			if ( ! empty( $action->id ) ) {
-				$actions_to_keep[] = (int) $action->id;
-			}
-		}
-
-		$clear_actions_query = $wpdb->prepare(
-			"DELETE FROM {$wpdb->prefix}wc_admin_note_actions WHERE note_id = %d",
-			$note->get_id()
-		);
-
-		if ( $actions_to_keep ) {
-			$clear_actions_query .= sprintf( ' AND action_id NOT IN (%s)', implode( ',', $actions_to_keep ) );
-		}
-
-		$wpdb->query( $clear_actions_query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-
-		// Update/insert the actions in this changeset.
-		foreach ( $changed_actions as $action ) {
+		foreach ( $note->get_actions( 'edit' ) as $action ) {
 			$action_data = array(
 				'note_id'    => $note->get_id(),
 				'name'       => $action->name,
@@ -307,9 +274,6 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 				$data_format
 			);
 		}
-
-		// Update actions from DB (to grab new IDs).
-		$this->read_actions( $note );
 	}
 
 	/**
@@ -333,11 +297,10 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		$where_clauses = $this->get_notes_where_clauses( $args );
 
 		$query = $wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT note_id, title, content FROM {$wpdb->prefix}wc_admin_notes WHERE 1=1{$where_clauses} ORDER BY {$args['orderby']} {$args['order']} LIMIT %d, %d",
 			$offset,
 			$args['per_page']
-		);
+		); // WPCS: unprepared SQL ok.
 
 		return $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -360,7 +323,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		);
 
 		if ( ! empty( $where_clauses ) ) {
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			return $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}wc_admin_notes WHERE 1=1{$where_clauses}" );
 		}
 
@@ -416,7 +379,7 @@ class DataStore extends \WC_Data_Store_WP implements \WC_Object_Data_Store_Inter
 		 * @param string $where_clauses The generated WHERE clause.
 		 * @param array  $args          The original arguments for the request.
 		 */
-		return apply_filters( 'woocommerce_note_where_clauses', $where_clauses, $args );
+		return apply_filters( 'wc_admin_notes_where_clauses', $where_clauses, $args );
 	}
 
 	/**

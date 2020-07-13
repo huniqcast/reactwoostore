@@ -2,7 +2,7 @@
 /**
  * WPInputObjectType - ShippingLineInput
  *
- * @package WPGraphQL\WooCommerce\Type\WPInputObject
+ * @package \WPGraphQL\WooCommerce\Type\WPInputObject
  * @since   0.2.0
  */
 
@@ -12,7 +12,6 @@ namespace WPGraphQL\WooCommerce\Type\WPInputObject;
  * Class Shipping_Line_Input
  */
 class Shipping_Line_Input {
-
 	/**
 	 * Registers type
 	 */

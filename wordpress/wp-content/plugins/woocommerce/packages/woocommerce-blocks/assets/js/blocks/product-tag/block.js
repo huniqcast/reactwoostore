@@ -17,13 +17,15 @@ import {
 } from '@wordpress/components';
 import { Component, Fragment } from '@wordpress/element';
 import PropTypes from 'prop-types';
-import { HAS_TAGS } from '@woocommerce/block-settings';
-import GridContentControl from '@woocommerce/block-components/grid-content-control';
-import GridLayoutControl from '@woocommerce/block-components/grid-layout-control';
-import ProductTagControl from '@woocommerce/block-components/product-tag-control';
-import ProductOrderbyControl from '@woocommerce/block-components/product-orderby-control';
-import { IconProductTag } from '@woocommerce/block-components/icons';
-import { gridBlockPreview } from '@woocommerce/resource-previews';
+
+/**
+ * Internal dependencies
+ */
+import GridContentControl from '../../components/grid-content-control';
+import GridLayoutControl from '../../components/grid-layout-control';
+import ProductTagControl from '../../components/product-tag-control';
+import ProductOrderbyControl from '../../components/product-orderby-control';
+import { hasTags } from '../../components/utils';
 
 /**
  * Component to handle edit mode of "Products by Tag".
@@ -67,12 +69,7 @@ class ProductsByTagBlock extends Component {
 
 	setChangedAttributes( attributes ) {
 		this.setState( ( prevState ) => {
-			return {
-				changedAttributes: {
-					...prevState.changedAttributes,
-					...attributes,
-				},
-			};
+			return { changedAttributes: { ...prevState.changedAttributes, ...attributes } };
 		} );
 	}
 
@@ -99,10 +96,7 @@ class ProductsByTagBlock extends Component {
 		return (
 			<InspectorControls key="inspector">
 				<PanelBody
-					title={ __(
-						'Product Tag',
-						'woocommerce'
-					) }
+					title={ __( 'Product Tag', 'woo-gutenberg-products-block' ) }
 					initialOpen={ ! attributes.tags.length && ! isEditing }
 				>
 					<ProductTagControl
@@ -118,7 +112,7 @@ class ProductsByTagBlock extends Component {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Layout', 'woocommerce' ) }
+					title={ __( 'Layout', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<GridLayoutControl
@@ -129,18 +123,16 @@ class ProductsByTagBlock extends Component {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Content', 'woocommerce' ) }
+					title={ __( 'Content', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<GridContentControl
 						settings={ contentVisibility }
-						onChange={ ( value ) =>
-							setAttributes( { contentVisibility: value } )
-						}
+						onChange={ ( value ) => setAttributes( { contentVisibility: value } ) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Order By', 'woocommerce' ) }
+					title={ __( 'Order By', 'woo-gutenberg-products-block' ) }
 					initialOpen={ false }
 				>
 					<ProductOrderbyControl
@@ -161,7 +153,7 @@ class ProductsByTagBlock extends Component {
 			debouncedSpeak(
 				__(
 					'Showing Products by Tag block preview.',
-					'woocommerce'
+					'woo-gutenberg-products-block'
 				)
 			);
 		};
@@ -170,23 +162,20 @@ class ProductsByTagBlock extends Component {
 			debouncedSpeak(
 				__(
 					'Showing Products by Tag block preview.',
-					'woocommerce'
+					'woo-gutenberg-products-block'
 				)
 			);
 		};
 
 		return (
 			<Placeholder
-				icon={ <IconProductTag className="block-editor-block-icon" /> }
-				label={ __(
-					'Products by Tag',
-					'woocommerce'
-				) }
+				icon="tag"
+				label={ __( 'Products by Tag', 'woo-gutenberg-products-block' ) }
 				className="wc-block-products-grid wc-block-product-tag"
 			>
 				{ __(
-					'Display a grid of products from your selected tags.',
-					'woocommerce'
+					'Display a grid of products from your selected tags',
+					'woo-gutenberg-products-block'
 				) }
 				<div className="wc-block-product-tag__selection">
 					<ProductTagControl
@@ -201,14 +190,14 @@ class ProductsByTagBlock extends Component {
 						}
 					/>
 					<Button isDefault onClick={ onDone }>
-						{ __( 'Done', 'woocommerce' ) }
+						{ __( 'Done', 'woo-gutenberg-products-block' ) }
 					</Button>
 					<Button
 						className="wc-block-product-tag__cancel-button"
 						isTertiary
 						onClick={ onCancel }
 					>
-						{ __( 'Cancel', 'woocommerce' ) }
+						{ __( 'Cancel', 'woo-gutenberg-products-block' ) }
 					</Button>
 				</div>
 			</Placeholder>
@@ -222,25 +211,15 @@ class ProductsByTagBlock extends Component {
 		return (
 			<Disabled>
 				{ selectedTags ? (
-					<ServerSideRender
-						block={ name }
-						attributes={ attributes }
-					/>
+					<ServerSideRender block={ name } attributes={ attributes } />
 				) : (
 					<Placeholder
-						icon={
-							<IconProductTag className="block-editor-block-icon" />
-						}
-						label={ __(
-							'Products by Tag',
-							'woocommerce'
-						) }
+						icon="tag"
+						label={ __( 'Products by Tag', 'woo-gutenberg-products-block' ) }
 						className="wc-block-products-grid wc-block-product-tag"
 					>
-						{ __(
-							'This block displays products from selected tags. Select at least one tag to display its products.',
-							'woocommerce'
-						) }
+						{ __( 'This block displays products from selected tags. Select at least one tag to display its products.', 'woo-gutenberg-products-block' ) }
+
 					</Placeholder>
 				) }
 			</Disabled>
@@ -249,15 +228,10 @@ class ProductsByTagBlock extends Component {
 
 	render() {
 		const { isEditing } = this.state;
-		const { attributes } = this.props;
-
-		if ( attributes.isPreview ) {
-			return gridBlockPreview;
-		}
 
 		return (
 			<Fragment>
-				{ HAS_TAGS ? (
+				{ hasTags ? (
 					<Fragment>
 						<BlockControls>
 							<Toolbar
@@ -265,35 +239,27 @@ class ProductsByTagBlock extends Component {
 									{
 										icon: 'edit',
 										title: __( 'Edit' ),
-										onClick: () =>
-											isEditing
-												? this.stopEditing()
-												: this.startEditing(),
+										onClick: () => isEditing ? this.stopEditing() : this.startEditing(),
 										isActive: isEditing,
 									},
 								] }
 							/>
 						</BlockControls>
 						{ this.getInspectorControls() }
-						{ isEditing
-							? this.renderEditMode()
-							: this.renderViewMode() }
+						{ isEditing ? (
+							this.renderEditMode()
+						) : (
+							this.renderViewMode()
+						) }
 					</Fragment>
 				) : (
 					<Placeholder
-						icon={
-							<IconProductTag className="block-editor-block-icon" />
-						}
-						label={ __(
-							'Products by Tag',
-							'woocommerce'
-						) }
+						icon="tag"
+						label={ __( 'Products by Tag', 'woo-gutenberg-products-block' ) }
 						className="wc-block-products-grid wc-block-product-tag"
 					>
-						{ __(
-							"This block displays products from selected tags. In order to preview this you'll first need to create a product and assign it some tags.",
-							'woocommerce'
-						) }
+						{ __( "This block displays products from selected tags. In order to preview this you'll first need to create a product and assign it some tags.", 'woo-gutenberg-products-block' ) }
+
 					</Placeholder>
 				) }
 			</Fragment>

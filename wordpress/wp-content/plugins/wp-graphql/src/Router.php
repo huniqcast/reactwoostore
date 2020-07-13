@@ -3,6 +3,7 @@
 namespace WPGraphQL;
 
 use GraphQL\Error\FormattedError;
+use GraphQL\Executor\ExecutionResult;
 
 /**
  * Class Router
@@ -123,16 +124,19 @@ class Router {
 		if ( isset( $_GET[ self::$route ] ) ) {
 			return true;
 		}
-
+                
 		// If before 'init' check $_SERVER.
 		if ( isset( $_SERVER['HTTP_HOST'] ) && isset( $_SERVER['REQUEST_URI'] ) ) {
+                    
 			$haystack = wp_unslash( $_SERVER['HTTP_HOST'] )
 				. wp_unslash( $_SERVER['REQUEST_URI'] );
-			$needle   = site_url( self::$route );
-
+			$needle   = home_url( self::$route );
+                        
 			// Strip protocol.
 			$haystack = preg_replace( '#^(http(s)?://)#', '', $haystack );
+                        $haystack = preg_replace( '#^(10.0.2.2)#', 'localhost', $haystack );
 			$needle   = preg_replace( '#^(http(s)?://)#', '', $needle );
+                        
 			$len      = strlen( $needle );
 			return ( substr( $haystack, 0, $len ) === $needle );
 		}
@@ -166,7 +170,7 @@ class Router {
 	 * @throws \Throwable
 	 */
 	public static function resolve_http_request() {
-
+                
 		/**
 		 * Access the $wp_query object
 		 */
@@ -175,7 +179,7 @@ class Router {
 		/**
 		 * Ensure we're on the registered route for graphql route
 		 */
-		if ( ! self::is_graphql_http_request() || is_graphql_request() ) {
+		if ( ! self::is_graphql_http_request() ||  is_graphql_request() ) {
 			return;
 		}
 
@@ -425,7 +429,8 @@ class Router {
 		 *
 		 * @since 0.0.5
 		 */
-		do_action( 'graphql_process_http_request_response', $response, $result, $operation_name, $query, $variables );
+                
+                do_action( 'graphql_process_http_request_response', $response, $result, $operation_name, $query, $variables );
 
 		/**
 		 * Send the response

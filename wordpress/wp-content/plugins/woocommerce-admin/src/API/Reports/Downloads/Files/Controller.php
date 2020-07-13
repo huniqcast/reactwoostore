@@ -24,7 +24,7 @@ class Controller extends \WC_REST_Reports_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.

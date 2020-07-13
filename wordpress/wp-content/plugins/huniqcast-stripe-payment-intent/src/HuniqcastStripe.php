@@ -96,7 +96,7 @@ class HuniqcastStripe {
 
     public function rest_api_init() {
         register_rest_route('huniqcast-stripe/v1', '/payment-intent', [
-            'methods' => 'GET',
+            'methods' => 'POST',
             'callback' => array($this, 'payment_intent')
         ]);
     }

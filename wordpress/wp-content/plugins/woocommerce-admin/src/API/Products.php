@@ -24,7 +24,7 @@ class Products extends \WC_REST_Products_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Adds properties that can be embed via ?_embed=1.
@@ -127,7 +127,6 @@ class Products extends \WC_REST_Products_Controller {
 		if ( $request->get_param( 'low_in_stock' ) && is_numeric( $object_data['low_stock_amount'] ) ) {
 			$data->data['low_stock_amount'] = $object_data['low_stock_amount'];
 		}
-		$data->data['name'] = wp_strip_all_tags( $data->data['name'] );
 
 		return $data;
 	}
@@ -159,16 +158,17 @@ class Products extends \WC_REST_Products_Controller {
 
 		$search = $wp_query->get( 'search' );
 		if ( $search ) {
-			$title_like = '%' . $wpdb->esc_like( $search ) . '%';
-			$where     .= $wpdb->prepare( " AND ({$wpdb->posts}.post_title LIKE %s", $title_like );  // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$where     .= wc_product_sku_enabled() ? $wpdb->prepare( ' OR wc_product_meta_lookup.sku LIKE %s)', $search ) : ')';
+			$search = $wpdb->esc_like( $search );
+			$search = "'%" . $search . "%'";
+			$where .= " AND ({$wpdb->posts}.post_title LIKE {$search}";
+			$where .= wc_product_sku_enabled() ? ' OR wc_product_meta_lookup.sku LIKE ' . $search . ')' : ')';
 		}
 
 		if ( $wp_query->get( 'low_in_stock' ) ) {
 			$low_stock_amount = absint( max( get_option( 'woocommerce_notify_low_stock_amount' ), 1 ) );
 			$where           .= "
 			AND wc_product_meta_lookup.stock_quantity IS NOT NULL
-			AND wc_product_meta_lookup.stock_status IN('instock','outofstock')
+			AND wc_product_meta_lookup.stock_status = 'instock'
 			AND (
 				(
 					low_stock_amount_meta.meta_value > ''

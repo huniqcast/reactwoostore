@@ -4,7 +4,7 @@
  *
  * Registers product types and queries
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.3.0
  */
 
@@ -14,6 +14,8 @@ use GraphQL\Error\UserError;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
+use WPGraphQL\Type\WPObjectType;
+use WPGraphQL\Data\DataSource;
 use WPGraphQL\WooCommerce\Data\Factory;
 use WPGraphQL\WooCommerce\Type\WPInterface\Product;
 
@@ -21,7 +23,6 @@ use WPGraphQL\WooCommerce\Type\WPInterface\Product;
  * Class Product_Types
  */
 class Product_Types {
-
 	/**
 	 * Registers product types to the WPGraphQL schema
 	 */
@@ -418,13 +419,13 @@ class Product_Types {
 
 					if ( empty( $product_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $product_id ) );
+						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s' ), $id_type, $product_id ) );
 					} elseif ( \WC()->product_factory->get_product_type( $product_id ) !== $type ) {
 						/* translators: Invalid product type message %1$s: Product ID, %2$s: Product type */
-						throw new UserError( sprintf( __( 'This product of ID %1$s is not a %2$s product', 'wp-graphql-woocommerce' ), $product_id, $type ) );
+						throw new UserError( sprintf( __( 'This product of ID %1$s is not a %2$s product' ), $product_id, $type ) );
 					} elseif ( get_post( $product_id )->post_type !== 'product' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $product_id ) );
+						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s' ), $id_type, $product_id ) );
 					}
 
 					$product = Factory::resolve_crud_object( $product_id, $context );

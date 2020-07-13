@@ -40,11 +40,7 @@ class WC_Order_Item_Data_Store implements WC_Order_Item_Data_Store_Interface {
 			)
 		);
 
-		$item_id = absint( $wpdb->insert_id );
-
-		$this->clear_caches( $item_id, $order_id );
-
-		return $item_id;
+		return absint( $wpdb->insert_id );
 	}
 
 	/**
@@ -57,9 +53,7 @@ class WC_Order_Item_Data_Store implements WC_Order_Item_Data_Store_Interface {
 	 */
 	public function update_order_item( $item_id, $item ) {
 		global $wpdb;
-		$updated = $wpdb->update( $wpdb->prefix . 'woocommerce_order_items', $item, array( 'order_item_id' => $item_id ) );
-		$this->clear_caches( $item_id, null );
-		return $updated;
+		return $wpdb->update( $wpdb->prefix . 'woocommerce_order_items', $item, array( 'order_item_id' => $item_id ) );
 	}
 
 	/**
@@ -69,14 +63,9 @@ class WC_Order_Item_Data_Store implements WC_Order_Item_Data_Store_Interface {
 	 * @param  int $item_id Item ID.
 	 */
 	public function delete_order_item( $item_id ) {
-		// Load the order ID before the deletion, since after, it won't exist in the database.
-		$order_id = $this->get_order_id_by_order_item_id( $item_id );
-
 		global $wpdb;
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}woocommerce_order_items WHERE order_item_id = %d", $item_id ) );
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}woocommerce_order_itemmeta WHERE order_item_id = %d", $item_id ) );
-
-		$this->clear_caches( $item_id, $order_id );
 	}
 
 	/**
@@ -156,34 +145,11 @@ class WC_Order_Item_Data_Store implements WC_Order_Item_Data_Store_Interface {
 	 *
 	 * @since 3.0.0
 	 * @param int $item_id Item ID.
-	 * @return string|null Order item type or null if no order item entry found.
+	 * @return string
 	 */
 	public function get_order_item_type( $item_id ) {
 		global $wpdb;
-		$order_item_type = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT order_item_type FROM {$wpdb->prefix}woocommerce_order_items WHERE order_item_id = %d LIMIT 1;",
-				$item_id
-			)
-		);
-
-		return $order_item_type;
-	}
-
-	/**
-	 * Clear meta cache.
-	 *
-	 * @param int      $item_id Item ID.
-	 * @param int|null $order_id Order ID. If not set, it will be loaded using the item ID.
-	 */
-	protected function clear_caches( $item_id, $order_id ) {
-		wp_cache_delete( 'item-' . $item_id, 'order-items' );
-
-		if ( ! $order_id ) {
-			$order_id = $this->get_order_id_by_order_item_id( $item_id );
-		}
-		if ( $order_id ) {
-			wp_cache_delete( 'order-items-' . $order_id, 'orders' );
-		}
+		$item_data = $wpdb->get_row( $wpdb->prepare( "SELECT order_item_type FROM {$wpdb->prefix}woocommerce_order_items WHERE order_item_id = %d LIMIT 1;", $item_id ) );
+		return $item_data->order_item_type;
 	}
 }

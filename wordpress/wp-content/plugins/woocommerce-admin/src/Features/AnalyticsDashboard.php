@@ -39,7 +39,7 @@ class AnalyticsDashboard {
 	 */
 	public function __construct() {
 		add_filter( 'woocommerce_component_settings_preload_endpoints', array( $this, 'add_preload_endpoints' ) );
-		add_filter( 'woocommerce_admin_get_user_data_fields', array( $this, 'add_user_data_fields' ) );
+		add_filter( 'wc_admin_get_user_data_fields', array( $this, 'add_user_data_fields' ) );
 		add_action( 'admin_menu', array( $this, 'register_page' ) );
 		// priority is 20 to run after https://github.com/woocommerce/woocommerce/blob/a55ae325306fc2179149ba9b97e66f32f84fdd9c/includes/admin/class-wc-admin-menus.php#L165.
 		add_action( 'admin_head', array( $this, 'update_link_structure' ), 20 );
@@ -52,8 +52,8 @@ class AnalyticsDashboard {
 	 * @return array
 	 */
 	public function add_preload_endpoints( $endpoints ) {
-		$endpoints['performanceIndicators'] = '/wc-analytics/reports/performance-indicators/allowed';
-		$endpoints['leaderboards']          = '/wc-analytics/leaderboards/allowed';
+		$endpoints['performanceIndicators'] = '/wc/v4/reports/performance-indicators/allowed';
+		$endpoints['leaderboards']          = '/wc/v4/leaderboards/allowed';
 		return $endpoints;
 	}
 

@@ -14,68 +14,47 @@ const GridContentControl = ( { onChange, settings } ) => {
 	return (
 		<Fragment>
 			<ToggleControl
-				label={ __( 'Product title', 'woocommerce' ) }
+				label={ __( 'Product title', 'woo-gutenberg-products-block' ) }
 				help={
-					title
-						? __(
-								'Product title is visible.',
-								'woocommerce'
-						  )
-						: __(
-								'Product title is hidden.',
-								'woocommerce'
-						  )
+					title ?
+						__( 'Product title is visible.', 'woo-gutenberg-products-block' ) :
+						__( 'Product title is hidden.', 'woo-gutenberg-products-block' )
 				}
 				checked={ title }
 				onChange={ () => onChange( { ...settings, title: ! title } ) }
 			/>
 			<ToggleControl
-				label={ __( 'Product price', 'woocommerce' ) }
+				label={ __( 'Product price', 'woo-gutenberg-products-block' ) }
 				help={
-					price
-						? __(
-								'Product price is visible.',
-								'woocommerce'
-						  )
-						: __(
-								'Product price is hidden.',
-								'woocommerce'
-						  )
+					price ?
+						__( 'Product price is visible.', 'woo-gutenberg-products-block' ) :
+						__( 'Product price is hidden.', 'woo-gutenberg-products-block' )
 				}
 				checked={ price }
 				onChange={ () => onChange( { ...settings, price: ! price } ) }
 			/>
 			<ToggleControl
-				label={ __( 'Product rating', 'woocommerce' ) }
+				label={ __( 'Product rating', 'woo-gutenberg-products-block' ) }
 				help={
-					rating
-						? __(
-								'Product rating is visible.',
-								'woocommerce'
-						  )
-						: __(
-								'Product rating is hidden.',
-								'woocommerce'
-						  )
+					rating ?
+						__( 'Product rating is visible.', 'woo-gutenberg-products-block' ) :
+						__( 'Product rating is hidden.', 'woo-gutenberg-products-block' )
 				}
 				checked={ rating }
 				onChange={ () => onChange( { ...settings, rating: ! rating } ) }
 			/>
 			<ToggleControl
-				label={ __(
-					'Add to Cart button',
-					'woocommerce'
-				) }
+				label={ __( 'Add to Cart button', 'woo-gutenberg-products-block' ) }
 				help={
-					button
-						? __(
-								'Add to Cart button is visible.',
-								'woocommerce'
-						  )
-						: __(
-								'Add to Cart button is hidden.',
-								'woocommerce'
-						  )
+					button ?
+						__(
+							'Add to Cart button is visible.',
+							'woo-gutenberg-products-block'
+						) :
+						__(
+							'Add to Cart button is hidden.',
+							'woo-gutenberg-products-block'
+						)
 				}
 				checked={ button }
 				onChange={ () => onChange( { ...settings, button: ! button } ) }

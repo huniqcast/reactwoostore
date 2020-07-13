@@ -4,25 +4,26 @@
  *
  * Registers Refund WPObject type and queries
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.0.1
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPObject;
 
 use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\WooCommerce\Data\Factory;
+use WPGraphQL\Type\WPObjectType;
 
 /**
  * Class Refund_Type
  */
 class Refund_Type {
-
 	/**
-	 * Register Refund type and queries to the WPGraphQL schema.
+	 * Register Refund type and queries to the WPGraphQL schema
 	 */
 	public static function register() {
 		register_graphql_object_type(
@@ -78,7 +79,7 @@ class Refund_Type {
 						'description' => __( 'Type of ID being used identify refund', 'wp-graphql-woocommerce' ),
 					),
 				),
-				'resolve'     => function ( $source, array $args, AppContext $context ) {
+				'resolve'     => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$id = isset( $args['id'] ) ? $args['id'] : null;
 					$id_type = isset( $args['idType'] ) ? $args['idType'] : 'global_id';
 
@@ -99,10 +100,10 @@ class Refund_Type {
 
 					if ( empty( $refund_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No refund ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No refund ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $refund_id )->post_type !== 'shop_order_refund' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No refund exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No refund exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
 					// Check if user authorized to view order.

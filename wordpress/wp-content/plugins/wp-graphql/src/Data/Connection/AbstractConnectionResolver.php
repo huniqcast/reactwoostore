@@ -617,6 +617,7 @@ abstract class AbstractConnectionResolver {
 			return [];
 		}
 
+                
 		/**
 		 * Set the query for the resolver, for use as reference in filters, etc
 		 *

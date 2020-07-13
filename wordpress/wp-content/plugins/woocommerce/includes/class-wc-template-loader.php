@@ -454,8 +454,7 @@ class WC_Template_Loader {
 						'cache'    => false,
 					)
 				),
-				'products'
-			);
+			'products' );
 
 			// Allow queries to run e.g. layered nav.
 			add_action( 'pre_get_posts', array( WC()->query, 'product_query' ) );

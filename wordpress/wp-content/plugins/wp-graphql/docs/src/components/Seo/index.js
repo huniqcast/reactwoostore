@@ -40,7 +40,7 @@ function Seo({ description, lang, meta, keywords, title }) {
               },
               {
                 name: `twitter:creator`,
-                content: data.site.siteMetadata.twitterHandle,
+                content: data.site.siteMetadata.author,
               },
               {
                 name: `twitter:title`,
@@ -60,12 +60,7 @@ function Seo({ description, lang, meta, keywords, title }) {
                   : []
               )
               .concat(meta)}
-          >
-            <link
-              href="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css"
-              rel="stylesheet"
-            ></link>
-          </Helmet>
+          />
         )
       }}
     />
@@ -94,7 +89,7 @@ const detailsQuery = graphql`
       siteMetadata {
         title
         description
-        twitterHandle
+        author
       }
     }
   }

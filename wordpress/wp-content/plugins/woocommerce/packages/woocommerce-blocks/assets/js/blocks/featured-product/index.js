@@ -4,36 +4,33 @@
 import { __ } from '@wordpress/i18n';
 import { InnerBlocks } from '@wordpress/editor';
 import { registerBlockType } from '@wordpress/blocks';
-import { DEFAULT_HEIGHT } from '@woocommerce/block-settings';
 
 /**
  * Internal dependencies
  */
 import './style.scss';
 import './editor.scss';
-import { example } from './example';
 import Block from './block';
 
 /**
  * Register and run the "Featured Product" block.
  */
 registerBlockType( 'woocommerce/featured-product', {
-	title: __( 'Featured Product', 'woocommerce' ),
+	title: __( 'Featured Product', 'woo-gutenberg-products-block' ),
 	icon: {
 		src: 'star-filled',
 		foreground: '#96588a',
 	},
 	category: 'woocommerce',
-	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
+	keywords: [ __( 'WooCommerce', 'woo-gutenberg-products-block' ) ],
 	description: __(
 		'Visually highlight a product or variation and encourage prompt action.',
-		'woocommerce'
+		'woo-gutenberg-products-block'
 	),
 	supports: {
 		align: [ 'wide', 'full' ],
 		html: false,
 	},
-	example,
 	attributes: {
 		/**
 		 * Alignment of content inside block.
@@ -71,7 +68,7 @@ registerBlockType( 'woocommerce/featured-product', {
 		 */
 		height: {
 			type: 'number',
-			default: DEFAULT_HEIGHT,
+			default: wc_product_block_data.default_height,
 		},
 
 		/**
@@ -109,7 +106,7 @@ registerBlockType( 'woocommerce/featured-product', {
 		 */
 		linkText: {
 			type: 'string',
-			default: __( 'Shop now', 'woocommerce' ),
+			default: __( 'Shop now', 'woo-gutenberg-products-block' ),
 		},
 
 		/**
@@ -133,14 +130,6 @@ registerBlockType( 'woocommerce/featured-product', {
 		showPrice: {
 			type: 'boolean',
 			default: true,
-		},
-
-		/**
-		 * Product preview.
-		 */
-		previewProduct: {
-			type: 'object',
-			default: null,
 		},
 	},
 

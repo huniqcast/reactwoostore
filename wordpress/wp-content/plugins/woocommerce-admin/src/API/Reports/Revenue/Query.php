@@ -42,14 +42,13 @@ class Query extends ReportsQuery {
 			'fields'   => array(
 				'orders_count',
 				'num_items_sold',
-				'total_sales',
+				'gross_revenue',
 				'coupons',
 				'coupons_count',
 				'refunds',
 				'taxes',
 				'shipping',
 				'net_revenue',
-				'gross_sales',
 			),
 		);
 	}
@@ -60,10 +59,10 @@ class Query extends ReportsQuery {
 	 * @return array
 	 */
 	public function get_data() {
-		$args = apply_filters( 'woocommerce_analytics_revenue_query_args', $this->get_query_vars() );
+		$args = apply_filters( 'woocommerce_reports_revenue_query_args', $this->get_query_vars() );
 
 		$data_store = \WC_Data_Store::load( 'report-revenue-stats' );
 		$results    = $data_store->get_data( $args );
-		return apply_filters( 'woocommerce_analytics_revenue_select_query', $results, $args );
+		return apply_filters( 'woocommerce_reports_revenue_select_query', $results, $args );
 	}
 }

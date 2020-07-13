@@ -4,23 +4,25 @@
  *
  * Registers ProductVariation WPObject type
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.0.1
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPObject;
 
 use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\WooCommerce\Data\Factory;
+use WPGraphQL\WooCommerce\Model\Product_Variation;
+use WPGraphQL\Type\WPObjectType;
 
 /**
  * Class Product_Variation_Type
  */
 class Product_Variation_Type {
-
 	/**
 	 * Register ProductVariation type to the WPGraphQL schema
 	 */
@@ -267,7 +269,7 @@ class Product_Variation_Type {
 						),
 					),
 				),
-				'resolve'     => function ( $source, array $args, AppContext $context ) {
+				'resolve'     => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$id = isset( $args['id'] ) ? $args['id'] : null;
 					$id_type = isset( $args['idType'] ) ? $args['idType'] : 'global_id';
 
@@ -298,10 +300,10 @@ class Product_Variation_Type {
 
 					if ( empty( $variation_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product variation ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No product variation ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $variation_id )->post_type !== 'product_variation' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product variation exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No product variation exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
 					return Factory::resolve_crud_object( $variation_id, $context );

@@ -12,8 +12,6 @@ namespace Automattic\WooCommerce\Admin\API\Reports\Revenue\Stats;
 defined( 'ABSPATH' ) || exit;
 
 use \Automattic\WooCommerce\Admin\API\Reports\Revenue\Query as RevenueQuery;
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableInterface;
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableTraits;
 use \Automattic\WooCommerce\Admin\API\Reports\ParameterException;
 
 /**
@@ -22,18 +20,14 @@ use \Automattic\WooCommerce\Admin\API\Reports\ParameterException;
  * @package WooCommerce/API
  * @extends WC_REST_Reports_Controller
  */
-class Controller extends \WC_REST_Reports_Controller implements ExportableInterface {
-	/**
-	 * Exportable traits.
-	 */
-	use ExportableTraits;
+class Controller extends \WC_REST_Reports_Controller {
 
 	/**
 	 * Endpoint namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -66,7 +60,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 	 * Get all reports.
 	 *
 	 * @param WP_REST_Request $request Request data.
-	 * @return WP_REST_Response|WP_Error
+	 * @return array|WP_Error
 	 */
 	public function get_items( $request ) {
 		$query_args      = $this->prepare_reports_query( $request );
@@ -112,24 +106,6 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 	}
 
 	/**
-	 * Get report items for export.
-	 *
-	 * Returns only the interval data.
-	 *
-	 * @param WP_REST_Request $request Request data.
-	 * @return WP_REST_Response
-	 */
-	public function get_export_items( $request ) {
-		$response  = $this->get_items( $request );
-		$data      = $response->get_data();
-		$intervals = $data['intervals'];
-
-		$response->set_data( $intervals );
-
-		return $response;
-	}
-
-	/**
 	 * Prepare a report object for serialization.
 	 *
 	 * @param Array           $report  Report data.
@@ -165,8 +141,8 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 	 */
 	public function get_item_schema() {
 		$data_values = array(
-			'total_sales'    => array(
-				'description' => __( 'Total Sales.', 'woocommerce-admin' ),
+			'gross_revenue'  => array(
+				'description' => __( 'Gross revenue.', 'woocommerce-admin' ),
 				'type'        => 'number',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
@@ -174,7 +150,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 				'format'      => 'currency',
 			),
 			'net_revenue'    => array(
-				'description' => __( 'Net Sales.', 'woocommerce-admin' ),
+				'description' => __( 'Net revenue.', 'woocommerce-admin' ),
 				'type'        => 'number',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
@@ -211,8 +187,8 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 				'format'      => 'currency',
 			),
 			'refunds'        => array(
-				'title'       => __( 'Returns', 'woocommerce-admin' ),
-				'description' => __( 'Total of returns.', 'woocommerce-admin' ),
+				'title'       => __( 'Refunds', 'woocommerce-admin' ),
+				'description' => __( 'Total of refunds.', 'woocommerce-admin' ),
 				'type'        => 'number',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
@@ -236,14 +212,6 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 				'type'        => 'integer',
 				'context'     => array( 'view', 'edit' ),
 				'readonly'    => true,
-			),
-			'gross_sales'    => array(
-				'description' => __( 'Gross Sales.', 'woocommerce-admin' ),
-				'type'        => 'number',
-				'context'     => array( 'view', 'edit' ),
-				'readonly'    => true,
-				'indicator'   => true,
-				'format'      => 'currency',
 			),
 		);
 
@@ -398,7 +366,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 			'default'           => 'date',
 			'enum'              => array(
 				'date',
-				'total_sales',
+				'gross_revenue',
 				'coupons',
 				'refunds',
 				'shipping',
@@ -406,7 +374,6 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 				'net_revenue',
 				'orders_count',
 				'items_sold',
-				'gross_sales',
 			),
 			'validate_callback' => 'rest_validate_request_arg',
 		);
@@ -438,44 +405,5 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		);
 
 		return $params;
-	}
-
-	/**
-	 * Get the column names for export.
-	 *
-	 * @return array Key value pair of Column ID => Label.
-	 */
-	public function get_export_columns() {
-		return array(
-			'date'         => __( 'Date', 'woocommerce-admin' ),
-			'orders_count' => __( 'Orders', 'woocommerce-admin' ),
-			'total_sales'  => __( 'Total Sales', 'woocommerce-admin' ),
-			'refunds'      => __( 'Returns', 'woocommerce-admin' ),
-			'coupons'      => __( 'Coupons', 'woocommerce-admin' ),
-			'taxes'        => __( 'Taxes', 'woocommerce-admin' ),
-			'shipping'     => __( 'Shipping', 'woocommerce-admin' ),
-			'net_revenue'  => __( 'Net Revenue', 'woocommerce-admin' ),
-		);
-	}
-
-	/**
-	 * Get the column values for export.
-	 *
-	 * @param array $item Single report item/row.
-	 * @return array Key value pair of Column ID => Row Value.
-	 */
-	public function prepare_item_for_export( $item ) {
-		$subtotals = (array) $item['subtotals'];
-
-		return array(
-			'date'         => $item['date_start'],
-			'orders_count' => $subtotals['orders_count'],
-			'total_sales'  => self::csv_number_format( $subtotals['total_sales'] ),
-			'refunds'      => self::csv_number_format( $subtotals['refunds'] ),
-			'coupons'      => self::csv_number_format( $subtotals['coupons'] ),
-			'taxes'        => self::csv_number_format( $subtotals['taxes'] ),
-			'shipping'     => self::csv_number_format( $subtotals['shipping'] ),
-			'net_revenue'  => self::csv_number_format( $subtotals['net_revenue'] ),
-		);
 	}
 }

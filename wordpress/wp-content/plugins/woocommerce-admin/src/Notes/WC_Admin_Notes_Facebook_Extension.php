@@ -29,7 +29,7 @@ class WC_Admin_Notes_Facebook_Extension {
 	 * Attach hooks.
 	 */
 	public function __construct() {
-		add_action( 'woocommerce_note_action_install-now', array( $this, 'install_facebook_extension' ) );
+		add_action( 'woocommerce_admin_note_action_install-now', array( $this, 'install_facebook_extension' ) );
 	}
 
 	/**
@@ -69,7 +69,7 @@ class WC_Admin_Notes_Facebook_Extension {
 		$note->set_name( self::NOTE_NAME );
 		$note->set_source( 'woocommerce-admin' );
 		$note->add_action( 'learn-more', __( 'Learn more', 'woocommerce-admin' ), 'https://woocommerce.com/products/facebook/', WC_Admin_Note::E_WC_ADMIN_NOTE_UNACTIONED );
-		$note->add_action( 'install-now', __( 'Install now', 'woocommerce-admin' ), false, WC_Admin_Note::E_WC_ADMIN_NOTE_UNACTIONED, true );
+		$note->add_action( 'install-now', __( 'Install now', 'woocommerce-admin' ), false, WC_Admin_Note::E_WC_ADMIN_NOTE_ACTIONED, true );
 
 		// Create the note as "actioned" if the Facebook extension is already installed.
 		if ( 0 === validate_plugin( 'facebook-for-woocommerce/facebook-for-woocommerce.php' ) ) {
@@ -81,41 +81,19 @@ class WC_Admin_Notes_Facebook_Extension {
 
 	/**
 	 * Install Facebook extension when note is actioned.
-	 *
-	 * @param WC_Admin_Note $note Note being acted upon.
 	 */
 	public function install_facebook_extension( $note ) {
 		if ( self::NOTE_NAME === $note->get_name() ) {
-			$install_request = array( 'plugin' => 'facebook-for-woocommerce' );
-			$installer       = new \Automattic\WooCommerce\Admin\API\OnboardingPlugins();
-			$result          = $installer->install_plugin( $install_request );
+			$plugin    = array( 'plugin' => 'facebook-for-woocommerce' );
+			$installer = new \Automattic\WooCommerce\Admin\API\OnboardingPlugins();
+			$result    = $installer->install_plugin( $plugin );
 
 			if ( is_wp_error( $result ) ) {
 				// @todo Reset note actioned status?
 				return;
 			}
 
-			$activate_request = array( 'plugins' => 'facebook-for-woocommerce' );
-			$installer->activate_plugins( $activate_request );
-
-			$content = __( 'You\'re almost ready to start driving sales with Facebook. Complete the setup steps to control how WooCommerce integrates with your Facebook store.', 'woocommerce-admin' );
-			$note->set_title( __( 'Market on Facebook — Installed', 'woocommerce-admin' ) );
-			$note->set_content( $content );
-			$note->set_icon( 'checkmark-circle' );
-			$note->clear_actions();
-			$note->add_action(
-				'configure-facebook',
-				__( 'Setup', 'woocommerce-admin' ),
-				add_query_arg(
-					array(
-						'page'    => 'wc-settings',
-						'tab'     => 'integration',
-						'section' => 'facebookcommerce',
-					),
-					admin_url( 'admin.php' )
-				),
-				WC_Admin_Note::E_WC_ADMIN_NOTE_UNACTIONED
-			);
+			$installer->activate_plugin( $plugin );
 		}
 	}
 }

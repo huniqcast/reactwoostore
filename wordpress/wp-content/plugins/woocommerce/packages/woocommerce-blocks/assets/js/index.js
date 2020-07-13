@@ -16,7 +16,7 @@ setCategories( [
 	// Add a WooCommerce block category
 	{
 		slug: 'woocommerce',
-		title: __( 'WooCommerce', 'woocommerce' ),
+		title: __( 'WooCommerce', 'woo-gutenberg-products-block' ),
 		icon: <IconWoo />,
 	},
 ] );

@@ -16,16 +16,18 @@ use GraphQLRelay\Relay;
  * Class Order
  */
 class Order extends Crud_CPT {
-
 	/**
 	 * Defines get_restricted_cap
 	 */
 	use Shop_Manager_Caps;
 
 	/**
-	 * Order constructor.
+	 * Order constructor
 	 *
 	 * @param int $id - shop_order post-type ID.
+	 *
+	 * @access public
+	 * @return void
 	 */
 	public function __construct( $id ) {
 		$this->data                = \WC_Order_Factory::get_order( $id );
@@ -66,7 +68,9 @@ class Order extends Crud_CPT {
 	}
 
 	/**
-	 * Initializes the Order field resolvers.
+	 * Initializes the Order field resolvers
+	 *
+	 * @access protected
 	 */
 	protected function init() {
 		if ( empty( $this->fields ) ) {

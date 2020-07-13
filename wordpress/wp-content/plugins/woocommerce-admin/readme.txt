@@ -1,10 +1,10 @@
 === WooCommerce Admin ===
 Contributors: automattic
 Tags: ecommerce, e-commerce, store, sales, reports, analytics, dashboard, activity, notices, insights, stats, woo commerce, woocommerce
-Requires at least: 5.3.0
-Tested up to: 5.3.2
+Requires at least: 5.2.0
+Tested up to: 5.2.1
 Requires PHP: 5.6.20
-Stable tag: 1.0.3
+Stable tag: 1.0.0
 License: GPLv3
 License URI: https://github.com/woocommerce/woocommerce-admin/blob/master/license.txt
 
@@ -34,9 +34,9 @@ WooCommerce Admin also allows store owners to customize a new dashboard screen w
 
 = Minimum Requirements =
 
-* WordPress 5.3
+* WordPress 5.2
 * WooCommerce 3.6.0 or greater
-* PHP version 5.6.20 or greater. PHP 7.2 or greater is recommended
+* PHP version 5.4 or greater. PHP 7.2 or greater is recommended
 * MySQL version 5.0 or greater. MySQL 5.6 or greater is recommended
 
 Visit the [WooCommerce server requirements documentation](https://docs.woocommerce.com/document/server-requirements/) for a detailed list of server requirements.
@@ -47,7 +47,7 @@ Automatic installation is the easiest option, as WordPress handles the file tran
 1. Log in to your WordPress dashboard.
 2. Go to: Plugins > Add New.
 3. Enter “WooCommerce Admin” in the Search field, and view details about its point release, the rating and description.
-4. Select “Install Now” when you’re ready.
+4. Select “Install Now” when you’re ready
 
 = Manual installation =
 
@@ -70,279 +70,6 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 3. Analytics
 
 == Changelog ==
-
-= 1.0.3 2020-03-19 =
-
-- Fix: Stop calling protected has_satisfied_dependencies() on outdated plugin. #3938
-- Fix: Rename image assets in OBW business details step. #3931
-- Fix: Stop using WP Post store for Action Scheduler. #3936
-
-= 1.0.2 2020-03-18 =
-
-- Enhancement: Onboarding: business step: add Google Ads extension install #3725
-- Dev: Update prestart script so readme.txt stable tag is updated #3911
-- Tweak: create database tables on an earlier hook to avoid conflicts with core WooCommerce. #3896 
-- Fix - Made the admin note loading more resilient to prevent failures when loading notes with invalid content_data. #3926
-
-= 1.0.1 2020-03-12 =
-
-- Fix: Add Report Extension Example: Add default props to ReportFilters
-- Fix: Product report sorting by SKU when some products don't have SKUs
-- Dev: Add Changelog script
-- Fix: type warning on install timestamp in PHP 7.4
-- Fix: PHP error when WooCommerce core is Network Active on Multisites.
-- Fix: missing database table errors on WooCommerce upgrade.
-- Fix: undefined const WC_ADMIN_VERSION_NUMBER when WP < 5.3
-- Dev: Fix failing tests after WC core merge.
-- Dev: Bump WooCommerce tested up to tag
-
-= 1.0.0 2020-03-5 =
-
-- Fix: Customers Report: fix missing report param in search #3778
-- Fix: OBW Connect: Fix requesting state #3786
-- Fix: OBW: Fix retry plugin install button disappearing #3787
-- Fix: Update Country Labeling to Match Core #3790
-- Fix: Onboarding: Enable taxes when automatic taxes are setup #3795
-- Dev: Onboarding: Remove old development flags #3809
-- Fix: Padding on Jetpack notices when activity panel is present. $3418
-- Fix: Taxes Report search. #3815
-- Fix: Taxes Report search bug and adds initial documentation. #3816
-- Fix: Activity Panels: Remove W Panel #3827
-- Fix: Tracking on migrated options #3828
-
-= 0.26.1 2020-02-26 =
-
-- Fix: Remove free text Search option when no query exists #3755
-- Fix: StoreAlert: Fix typo in API description #3757 👏 @akirk
-- Fix: WP Coding Standards PR Regressions #3760
-- Fix: OBW: sideloading image test error #3762
-- Fix: coding standards violations #3763
-- Fix: Product titles include encoded entities #3765
-- Fix: Add deactivation hook to Package.php #3770
-- Fix: Add active version functions #3772
-
-= 0.26.0 2020-02-21 =
-
-- Fix: Warning in product data store when tax amount is non-numeric. #3656
-- Fix: Enable onboarding in production. #3680
-- Enhancement: Move Customers report to WooCommerce Menu #3632
-- Performance: Remove slow physical products query from non setup checklist pages #3722
-- Tweak: use cron instead of Action Scheduler for unsnoozing notes. #3662
-- Dev: Add tracks events when profiler steps are completed #3726
-- Dev: Ensure continue setup loads the onboarding profiler #3646
-- Fix: Added new control in /packages/components/src/select-control/list.js #3700
-- Fix: Alignment of select text #3723 👏 @edmundcwm
-- Performance: Make Stock Panel indicator more performant. #3729
-- Performance: Remove sideloaded images to save on build size #3731
-- Fix: Create Onboarding homepage without redirect #3727
-- Add: Deactivation note for feature plugin #3687
-- Dev: Travis tests on Github for release branch #3751
-
-= 0.25.0 2020-01-29 =
-
-- Fix: Onboarding: Mark profiler complete on WC update #3590 (On Merge to WC Core, Onboarding) 
-- Dev: fix strict standards in Scheduler classes #3583  
-- Task: Avoid redundant/unnecessary cleanup. #3580 (On Merge to WC Core) 
-- Fix: Fix styling of search control in report table header and filters. #3603 (Analytics, Components, Packages) 
-- Fix: report table search component. #3618 (Analytics, Components, Packages) 
-- Performance: Remove unnecessary use of lodash get #3598 (Onboarding) 
-- Tweak: don't modify page titles for existing WooCommerce pages. #3585 (On Merge to WC Core) 
-- Dev: Handle custom currency formats #3349 (Components, Packages) 
-- Fix: Update broken note action hooks #3535 (Activity Panel, Inbox) 
-- Dev: Onboarding: Only Show Retry Button on Plugin install failure #3545  
-- Dev: SelectControl: Add an option to show all options on refocus #3551 (Components, Packages) 
-- Fix: SQL error in category table sort. #3521 (Analytics) 
-- Dev: Onboarding: Add option to track appearance completion #3503 (Onboarding) 
-- Enhancement: add customer privacy erasure support. #3511 (Analytics) 
-- Fix: handle uninstallation when in feature plugin mode. #3546 (On Merge to WC Core) 
-- Fix: Exception on dashboard once Onboarding tasks are complete #3513  
-- Tweak: Onboarding - Add Skip Step link on Themes Step. #3490 (Onboarding) 
-- Bug: Add SelectControl debouncing and keyboard fixes #3507 (Components, Packages) 
-- Tweak: Included RegExp for JS files in examples.config.js #3510 (Build, Extensibility) 👏 @yash-webkul
-- Bug: Onboarding: Don't show skip link if no plugins exist to skip #3485 (Onboarding) 
-- Fix: Make package-based load inert when plugin is active. #3555 (On Merge to WC Core) 
-- Dev: Onboarding: Add purchase products task list item #3472 (Onboarding) 
-- Fix: Properly style theme selection button in Site Profiler #3489  
-- Dev: Onboarding: Add tracks to extension purchase task and modal #3493 (Onboarding) 
-- Tweak: Change Refunds to Returns on the dashboard. #3514  
-- Dev: Update translation scripts and instructions for creating `.json` files. #3433 (Build) 
-- Bug: Onboarding: Add in tracks for failed plugin installation #3483 (Onboarding) 
-- Dev: Onboarding: Add theme install and activation endpoints #3482 (Onboarding, REST API) 
-- Fix: component styles for WordPress 5.3. #3357 (Build, Components, Design, Packages) 
-- Dev: Onboarding: Add another option to platforms. #3471 (Onboarding) 
-- Fix: `CompareFilter` functionality regression. #3421 (Analytics, Components, Packages) 
-- Fix: don't run database migrations on new installs. #3473  
-- Fix: WC-Admin header on settings and status pages. #3389 (Activity Panel) 
-- Enhancement: allow filtering of hidden WP notices. #3391 (Activity Panel, Extensibility) 
-- Fix: show pending product reviews when comment moderation is disabled. #3459 (Activity Panel) 
-- Dev: AssetDataRegistry: update SQL example #3418  
-- Tweak: Scroll to notices when displayed while the notice area is scrolled out of view. #3390 (Activity Panel) 
-- Dev: DataStores: normalize contexts to plural #3419  
-- Enhancement: allow report cache layer to be turned off. #3434  
-- Bug: Fix user data fields filter name. #3428 (Dashboard) 
-- Fix: error when trying to download report data. #3429 (Analytics) 
-- Dev: Update to latest PHPUnit 7 #3571 (Build) 
-- Fix: invalidate Reports cache when changing Analytics settings. #3465 (Analytics, REST API, Settings) 
-- Bug: Onboarding: Skip Shipping connect step if Jetpack is already connected #3486 (Onboarding) 
-- Fix: Time zone offset calculation on customer last active date. #3388 (Analytics) 
-- Dev: Default the Calypso environment to production #3347 (Onboarding) 
-- Bug: Onboarding: Update shipping task button text #3400 (Onboarding) 
-- Bug: Onboarding: Update check for TOS accepted in tax step #3245 (Onboarding) 
-- Fix: remove the header when user doesn't have required permissions #3386 (Activity Panel) 
-- Dev: Add autocomplete props to address fields in onboarding and adjust country/state matching #3338 (Onboarding) 
-- Dev: Add purchase modal at the end of the profile wizard #3444 (Onboarding) 
-- Dev: Standardize hook and filter prefixes. #3339 (On Merge to WC Core) 
-- Fix: make report filter date props optional #3359 (Components, Extensibility, Packages) 
-- Tweak: Add/disable plugin filter #3361  
-- Dev: Onboarding -  Add button to continue setup after importing products #3402 (Build, Onboarding)
-
-= 0.24.0 2020-01-06 =
-
-- Bug: Add SelectControl debouncing and keyboard fixes #3507 (Components, Packages)
-- Fix: Properly style theme selection button in Site Profiler #3489
-- Dev: Update translation scripts and instructions for creating `.json` files. #3433 (Build)
-- Dev: Add initial documentation for the historical data import. #3506 (Documentation)
-- Dev: Onboarding: Add purchase products task list item #3472 (Onboarding)
-- Dev: Onboarding: Add another option to platforms. #3471 (Onboarding)
-- Dev: Add singular/plural distinction to onboarding plugins installation #3517 (Onboarding)
-- Dev: Onboarding: Add theme install and activation endpoints #3482 (Onboarding, REST API)
-- Tweak: Onboarding - Add Skip Step link on Themes Step. #3490 (Onboarding)
-- Bug: Onboarding: Skip Shipping connect step if Jetpack is already connected #3486 (Onboarding)
-- Bug: CI: use PR repo instead of main repo when checking out branches. #3512 (Build)
-- Tweak: Included RegExp for JS files in examples.config.js #3510 (Build, Extensibility) 👏 @yash-webkul
-- Dev: Onboarding: Add tracks to extension purchase task and modal #3493 (Onboarding)
-- Tweak: Change Refunds to Returns on the dashboard. #3514
-- Fix: invalidate Reports cache when changing Analytics settings. #3465 (Analytics, REST API, Settings)
-- Dev: DataStores: normalize contexts to plural #3419
-- Dev: AssetDataRegistry: update SQL example #3418
-- Fix: show pending product reviews when comment moderation is disabled. #3459 (Activity Panel)
-- Enhancement: allow report cache layer to be turned off. #3434
-- Tweak: Scroll to notices when displayed while the notice area is scrolled out of view. #3390 (Activity Panel)
-- Dev: Add autocomplete props to address fields in onboarding and adjust country/state matching #3338 (Onboarding)
-- Dev: Update instructions for documenting new components. #3443 (Components, Documentation)
-- Dev: Add purchase modal at the end of the profile wizard #3444 (Onboarding)
-- Fix: component styles for WordPress 5.3. #3357 (Build, Components, Design, Packages)
-- Bug: Onboarding: Don't show skip link if no plugins exist to skip #3485 (Onboarding)
-- Bug: Onboarding: Add in tracks for failed plugin installation #3483 (Onboarding)
-- Dev: Fix the "is this card useful" prompt display #3427 (Onboarding)
-- Tweak: Add/disable plugin filter #3361
-- Bug: Onboarding: Update shipping task button text #3400 (Onboarding)
-- Dev: Default the Calypso environment to production #3347 (Onboarding)
-- Dev: Standardize hook and filter prefixes. #3339 (On Merge to WC Core)
-- Fix: WC-Admin header on settings and status pages. #3389 (Activity Panel)
-- Dev: Fix revenue question translation with currency conversion #3358 (Onboarding, Packages)
-- Fix: make report filter date props optional #3359 (Components, Extensibility, Packages)
-- Dev: Onboarding -  Add button to continue setup after importing products #3402 (Build, Onboarding)
-- Bug: Onboarding: Update check for TOS accepted in tax step #3245 (Onboarding)
-
-= 0.23.3 2019-12-26 =
-
-- Fix: don't run database migrations on new installs. #3473
-
-= 0.23.2 2019-12-19 =
-
-- Enhancement: allow filtering of hidden WP notices. #3391 (Activity Panel, Extensibility)
-- Fix: error when trying to download report data. #3429 (Analytics)
-- Bug: Fix user data fields filter name. #3428 (Dashboard)
-- Fix: `CompareFilter` functionality regression. #3421 (Analytics, Components, Packages)
-- Fix: Time zone offset calculation on customer last active date. #3388 (Analytics)
-- Fix: remove the header when user doesn't have required permissions #3386 (Activity Panel)
-
-= 0.23.1 2019-12-08 =
-
-- Fix: undefined function error.
-
-= 0.23.0 2019-12-06 =
-
-- Dev: Add currency extension #3328 (Packages)
-- Fix: errant moment locale data loading. #3362 (Components, Packages)
-- Dev: Packages: Prep for release. #3325 (Build, Components, Packages)
-- Bug: Settings: Persist date range selection #3293
-- Dev: Remove Newspack dependency. #3302
-- Dev: DB Updates: invalidate cache after update #3299
-- Fix: beginning of next day calculation on daylight saving time on the days the time changes. #3333 (Analytics)
-- Tweak: Add a filter that allows disabling WooCommerce Admin. #3350 (On Merge to WC Core)
-- Fix: Retrieve week last year data by calendar date instead of week alignment. #3271 (Analytics, Packages)
-- Bug: Check if extended_info is set for order report items #3315 (REST API)
-- Tweak: remove global settings dependency from Navigation package. #3294 (Components, Packages)
-- Fix: Fix checkout of master branch in CI environment. #3296 (Build)
-- Fix: decouple Date package from global wcSettings object. #3278 (Components, Packages)
-- Fix: Make the order count between customer and table total consistent. #3290 (Analytics)
-- Fix: decouple Currency and Number packages from global wcSettings object. #3277 (Components, Packages)
-- Bug: Filter invalid statuses from saved statuses #3268
-- Dev: use a filter to set default locale #3273
-- Dev: Allow core inclusion via Package.php #3196 (Build)
-- Dev: Fix filter gap on analytics select controls #3259 (Components, Packages)
-- Bug: Correcting and clarifying analytics terms and calculations #3104 (Analytics, Components, Packages)
-- Dev: rename data store get_* to add_* functions where function does not return values #3275
-- Tweak: Search component: remove dependency on settings global from countries autocompleter. #3262 (Components, Packages)
-- Dev: PHPCS fixes for onboarding files #3269 (Documentation)
-- Dev: Add a tracks queue to delay event recording & log embed page views #3250
-- Dev: Make WooCommerce brand localizable #3247
-- Fix: Add single customer REST API end point. #3174 (REST API)
-- Dev: fix typos in JS docs #3248
-- Bug: Select control: fix misalignment and hide scroll bar #3215 (Components, Packages)
-- Dev: capitalize WooCommerce Services #3249
-
-= 0.22.0 2019-11-13 =
-
-- Fix: Incorrect calculation of tax summary on Taxes screen. #3158 (Analytics)
-- Fix: Correct product and coupon count on edited orders. #3103 (Analytics)
-- Bug: Update filter picker to use key instead of id #3214 (Analytics, Components, Packages)
-- Enhancement: prompt stores to add their first product(s). #3119 (Inbox)
-- Dev: Move Analytics REST endpoints to `wc-analytics` namespace. #3204 (Components, Packages)
-- Tweak: add usage tracking inbox notice. #3112 (Activity Panel, Inbox)
-- Task: Fix PHP linter errors. #3188
-- Enhancement: Add query filters to data stores.
-- Dev: Refactor data store classes. #2961 (REST API)
-- Dev: WooCommerce Admin has been marked as compatible with WooCommerce 3.8.0. #3201
-- Bug: Fix ellipsis menu style #3141 (Analytics, Components, Packages)
-- Tweak: Field misalignment in product edit screen. #3145
-- Dev: update tested to version for WC and WP #3162
-- none needed. #3138 (Documentation)
-
-= 0.21.0 2019-10-30 =
-
-- Fix: report export format when generated server-side. #2987 (Analytics, Packages)
-- Tweak: automatically update DB version during plugin updates. #3113
-- Tweak: add visual feedback for Inbox Note Actions #3039 (Activity Panel, Build, Inbox)
-- Fix: Address discrepancies in Revenue totals between Analytics screens. #3095 (Analytics)
-- Tweak: track inbox note views. #3096 (Activity Panel, Build, Inbox)
-- Dev: Fix asset image URL and business extension images #3062
-- Dev: Fix broken plugin builds by adding missing feature flag check #3053 (Build)
-- Enhancement: add management link to Reviews panel. #3011 (Activity Panel)
-- Fix: Error in category comparison chart. #3027 (Analytics, REST API)
-- Dev: Add the ability to create custom plugin builds #3044 (Build)
-- Fix: create table error during import. #3022 (Analytics, Build)
-- Tweak: Moved WC-Admin specific actions from TableCard to ReportTable. #2900 (Build, Components, Packages)
-
-= 0.20.1 2019-09-24 =
-
-- Fix: use category lookup id instead of term taxonomy id (#3027)
-- Fix: Update order stats table status index length. (#3022)
-
-= 0.20.0 2019-09-24 =
-
-- Dev: Fix issue #2992 (order number in orders panel) #2994
-- Dev: Replace lodash isNaN() with native Number.isNaN() #2998 (Build, Packages)
-- Enhancement: add option to email a download link when exporting reports. #2899 (Analytics, REST API)
-- Dev: Ignore filename rules for PSR-4 classes. #2967 (Build)
-- Fix: Catch notices that are hooked earlier than priority 10. #2981
-- Dev: Category Lookup Table - Fix Category Segments #2253
-- Performance: add caching layer to analytics. #2970 (Analytics)
-- Dev: Replace lodash isFinite() with native Number.isFinite() #2977 (Build, Components, Packages)
-- Bug: Fix conflict with Blocks 2.4 #2846
-- Dev: Add filter to notes datastore where clauses. #2819
-- Dev: Copy component READMEs to docs folder before GH page deploy. #2952 (Build)
-- Dev: Add GitHub pages deploy step to Travis config. #2940 (Build, Documentation)
-- Dev: Fix plugin installation when working from a push instead of a pull request. #2950 (Build)
-- Dev: Fix pull request branch detection on CI (try #2) #2944 (Build)
-- Dev: Only build pushes to master branch. #2941 (Build)
-- Performance: reduce JS bundle size. #2933 (Build)
-- Dev: Fix pull request branch detection on CI #2942 (Build)
-- Dev: refresh component documentation #2872 (Build, Components, Documentation, Packages)
-- Dev: Simplified intervals_missing method of DataStore class #2920 👏 @codemascot
-- Dev: Simplified intervals_missing method of TimeInterval class #2920 👏 @codemascot
 
 = 0.19.0 2019-09-24 =
 
@@ -542,6 +269,7 @@ Release and roadmap notes are available on the [WooCommerce Developers Blog](htt
 - Fix: Dashboard: Rename class/feature to remove conflict with legacy dashboard widget #2138
 - Fix: add defaultOrder field to tablecard header #2139 👏 @rrennick
 - Fix: Travis: Exit scripts with error when one occurs #2184
+- Dev: Add profile wizard base page #1933
 - Dev: Save section/block preferences in user data #2148
 - Fix: Vertically center Dashboard 'Add more' button #2171
 - Fix: Don't make an API call when there are no performance indicators #2157

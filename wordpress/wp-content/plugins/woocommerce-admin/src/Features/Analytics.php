@@ -34,7 +34,7 @@ class Analytics {
 	 */
 	public function __construct() {
 		add_filter( 'woocommerce_component_settings_preload_endpoints', array( $this, 'add_preload_endpoints' ) );
-		add_filter( 'woocommerce_admin_get_user_data_fields', array( $this, 'add_user_data_fields' ) );
+		add_filter( 'wc_admin_get_user_data_fields', array( $this, 'add_user_data_fields' ) );
 		add_action( 'admin_menu', array( $this, 'register_pages' ) );
 	}
 
@@ -45,7 +45,7 @@ class Analytics {
 	 * @return array
 	 */
 	public function add_preload_endpoints( $endpoints ) {
-		$endpoints['countries'] = '/wc-analytics/data/countries';
+		$endpoints['countries'] = '/wc/v4/data/countries';
 		return $endpoints;
 	}
 
@@ -134,8 +134,8 @@ class Analytics {
 			array(
 				'id'     => 'woocommerce-analytics-customers',
 				'title'  => __( 'Customers', 'woocommerce-admin' ),
-				'parent' => 'woocommerce',
-				'path'   => '/customers',
+				'parent' => 'woocommerce-analytics',
+				'path'   => '/analytics/customers',
 			),
 			array(
 				'id'     => 'woocommerce-analytics-settings',
@@ -145,7 +145,7 @@ class Analytics {
 			),
 		);
 
-		$report_pages = apply_filters( 'woocommerce_analytics_report_menu_items', $report_pages );
+		$report_pages = apply_filters( 'woocommerce_admin_report_menu_items', $report_pages );
 
 		foreach ( $report_pages as $report_page ) {
 			if ( ! is_null( $report_page ) ) {

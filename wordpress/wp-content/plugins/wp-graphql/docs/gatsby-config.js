@@ -140,11 +140,5 @@ module.exports = {
     },
     `gatsby-plugin-netlify`,
     `gatsby-plugin-netlify-cache`,
-    {
-      resolve: `gatsby-plugin-react-axe`,
-      options: {
-        showInProduction: false,
-      },
-    },
   ],
 }

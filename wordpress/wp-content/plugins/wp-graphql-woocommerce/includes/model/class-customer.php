@@ -12,20 +12,21 @@ namespace WPGraphQL\WooCommerce\Model;
 
 use GraphQLRelay\Relay;
 use WPGraphQL\Model\Model;
-use WC_Customer;
 
 /**
  * Class Customer
  */
 class Customer extends Model {
-
 	/**
 	 * Customer constructor
 	 *
-	 * @param WC_Customer|int $id - User ID.
+	 * @param \WC_Customer|int $id - User ID.
+	 *
+	 * @access public
+	 * @return void
 	 */
 	public function __construct( $id = 'session' ) {
-		$this->data                = 'session' === $id ? \WC()->customer : new WC_Customer( $id );
+		$this->data                = 'session' === $id ? \WC()->customer : new \WC_Customer( $id );
 		$allowed_restricted_fields = array(
 			'isRestricted',
 			'isPrivate',
@@ -35,7 +36,6 @@ class Customer extends Model {
 			'displayName',
 		);
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$restricted_cap = apply_filters( 'customer_restricted_cap', 'session' === $id ? '' : 'list_users' );
 
 		parent::__construct( $restricted_cap, $allowed_restricted_fields, $id );
@@ -46,6 +46,7 @@ class Customer extends Model {
 	 *
 	 * @param string $method - function name.
 	 * @param array  $args  - function call arguments.
+	 *
 	 * @return mixed
 	 */
 	public function __call( $method, $args ) {
@@ -53,7 +54,9 @@ class Customer extends Model {
 	}
 
 	/**
-	 * Initializes the Customer field resolvers.
+	 * Initializes the Customer field resolvers
+	 *
+	 * @access protected
 	 */
 	protected function init() {
 		if ( empty( $this->fields ) ) {

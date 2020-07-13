@@ -553,7 +553,6 @@ class Product_Connection_Resolver extends AbstractConnectionResolver {
 				: PHP_INT_MAX;
 
 			$meta_query[] = apply_filters(
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 				'woocommerce_get_min_max_price_meta_query',
 				array(
 					'key'     => '_price',

@@ -84,23 +84,6 @@ class WC_Admin_Note extends \WC_Data {
 		}
 	}
 
-	/**
-	 * Merge changes with data and clear.
-	 *
-	 * @since 3.0.0
-	 */
-	public function apply_changes() {
-		$this->data = array_replace_recursive( $this->data, $this->changes ); // @codingStandardsIgnoreLine
-
-		// Note actions need to be replaced wholesale.
-		// Merging arrays doesn't allow for deleting note actions.
-		if ( isset( $this->changes['actions'] ) ) {
-			$this->data['actions'] = $this->changes['actions'];
-		}
-
-		$this->changes = array();
-	}
-
 	/*
 	|--------------------------------------------------------------------------
 	| Helpers
@@ -123,7 +106,7 @@ class WC_Admin_Note extends \WC_Data {
 			self::E_WC_ADMIN_NOTE_INFORMATIONAL,
 		);
 
-		return apply_filters( 'woocommerce_note_types', $allowed_types );
+		return apply_filters( 'woocommerce_admin_note_types', $allowed_types );
 	}
 
 	/**
@@ -138,7 +121,7 @@ class WC_Admin_Note extends \WC_Data {
 			self::E_WC_ADMIN_NOTE_SNOOZED,
 		);
 
-		return apply_filters( 'woocommerce_note_statuses', $allowed_statuses );
+		return apply_filters( 'woocommerce_admin_note_statuses', $allowed_statuses );
 	}
 
 

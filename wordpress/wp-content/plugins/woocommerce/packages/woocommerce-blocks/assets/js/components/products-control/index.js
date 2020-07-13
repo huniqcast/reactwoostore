@@ -2,90 +2,106 @@
  * External dependencies
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { SearchListControl } from '@woocommerce/components';
+import { Component, Fragment } from '@wordpress/element';
+import { debounce, find } from 'lodash';
 import PropTypes from 'prop-types';
-import { withSearchedProducts } from '@woocommerce/block-hocs';
-import ErrorMessage from '@woocommerce/block-components/error-placeholder/error-message.js';
+import { SearchListControl } from '@woocommerce/components';
 
 /**
- * The products control exposes a custom selector for searching and selecting
- * products.
- *
- * @param {Object} props Component props.
- * @param {Function} props.onChange  Callback fired when the selected item changes
- * @param {Function} props.onSearch  Callback fired when a search is triggered
- * @param {Array}    props.selected  An array of selected products.
- * @param {Array}    props.products  An array of products to select from.
- * @param {boolean}  props.isLoading Whether or not the products are being loaded.
- *
- * @return {Function} A functional component.
+ * Internal dependencies
  */
-const ProductsControl = ( {
-	error,
-	onChange,
-	onSearch,
-	selected,
-	products,
-	isLoading,
-} ) => {
-	const messages = {
-		clear: __( 'Clear all products', 'woocommerce' ),
-		list: __( 'Products', 'woocommerce' ),
-		noItems: __(
-			"Your store doesn't have any products.",
-			'woocommerce'
-		),
-		search: __(
-			'Search for products to display',
-			'woocommerce'
-		),
-		selected: ( n ) =>
-			sprintf(
-				_n(
-					'%d product selected',
-					'%d products selected',
-					n,
-					'woocommerce'
-				),
-				n
-			),
-		updated: __(
-			'Product search results updated.',
-			'woocommerce'
-		),
-	};
+import { isLargeCatalog, getProducts } from '../utils';
 
-	if ( error ) {
-		return <ErrorMessage error={ error } />;
+class ProductsControl extends Component {
+	constructor() {
+		super( ...arguments );
+		this.state = {
+			list: [],
+			loading: true,
+		};
+
+		this.debouncedOnSearch = debounce( this.onSearch.bind( this ), 400 );
 	}
 
-	return (
-		<SearchListControl
-			className="woocommerce-products"
-			list={ products }
-			isLoading={ isLoading }
-			selected={ products.filter( ( { id } ) =>
-				selected.includes( id )
-			) }
-			onSearch={ onSearch }
-			onChange={ onChange }
-			messages={ messages }
-		/>
-	);
-};
+	componentDidMount() {
+		const { selected } = this.props;
+
+		getProducts( { selected } )
+			.then( ( list ) => {
+				this.setState( { list, loading: false } );
+			} )
+			.catch( () => {
+				this.setState( { list: [], loading: false } );
+			} );
+	}
+
+	onSearch( search ) {
+		const { selected } = this.props;
+		getProducts( { selected, search } )
+			.then( ( list ) => {
+				this.setState( { list, loading: false } );
+			} )
+			.catch( () => {
+				this.setState( { list: [], loading: false } );
+			} );
+	}
+
+	render() {
+		const { list, loading } = this.state;
+		const { onChange, selected } = this.props;
+
+		const messages = {
+			clear: __( 'Clear all products', 'woo-gutenberg-products-block' ),
+			list: __( 'Products', 'woo-gutenberg-products-block' ),
+			noItems: __(
+				"Your store doesn't have any products.",
+				'woo-gutenberg-products-block'
+			),
+			search: __(
+				'Search for products to display',
+				'woo-gutenberg-products-block'
+			),
+			selected: ( n ) =>
+				sprintf(
+					_n(
+						'%d product selected',
+						'%d products selected',
+						n,
+						'woo-gutenberg-products-block'
+					),
+					n
+				),
+			updated: __(
+				'Product search results updated.',
+				'woo-gutenberg-products-block'
+			),
+		};
+
+		return (
+			<Fragment>
+				<SearchListControl
+					className="woocommerce-products"
+					list={ list }
+					isLoading={ loading }
+					selected={ selected.map( ( id ) => find( list, { id } ) ).filter( Boolean ) }
+					onSearch={ isLargeCatalog ? this.debouncedOnSearch : null }
+					onChange={ onChange }
+					messages={ messages }
+				/>
+			</Fragment>
+		);
+	}
+}
 
 ProductsControl.propTypes = {
+	/**
+	 * Callback to update the selected products.
+	 */
 	onChange: PropTypes.func.isRequired,
-	onSearch: PropTypes.func,
-	selected: PropTypes.array,
-	products: PropTypes.array,
-	isLoading: PropTypes.bool,
+	/**
+	 * The list of currently selected IDs.
+	 */
+	selected: PropTypes.array.isRequired,
 };
 
-ProductsControl.defaultProps = {
-	selected: [],
-	products: [],
-	isLoading: true,
-};
-
-export default withSearchedProducts( ProductsControl );
+export default ProductsControl;

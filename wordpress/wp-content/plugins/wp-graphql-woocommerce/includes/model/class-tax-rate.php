@@ -17,11 +17,13 @@ use WPGraphQL\Model\Model;
  * Class Tax_Rate
  */
 class Tax_Rate extends Model {
-
 	/**
 	 * Tax_Rate constructor
 	 *
 	 * @param int $rate - Tax rate object.
+	 *
+	 * @access public
+	 * @return void
 	 */
 	public function __construct( $rate ) {
 		$this->data                = $rate;
@@ -33,7 +35,6 @@ class Tax_Rate extends Model {
 			'rateId',
 		);
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$restricted_cap = apply_filters( 'tax_rate_restricted_cap', '' );
 
 		parent::__construct( $restricted_cap, $allowed_restricted_fields, null );
@@ -42,6 +43,7 @@ class Tax_Rate extends Model {
 	/**
 	 * Determines if the order item should be considered private
 	 *
+	 * @access public
 	 * @return bool
 	 */
 	protected function is_private() {
@@ -49,7 +51,9 @@ class Tax_Rate extends Model {
 	}
 
 	/**
-	 * Initializes the Order field resolvers.
+	 * Initializes the Order field resolvers
+	 *
+	 * @access protected
 	 */
 	protected function init() {
 		if ( empty( $this->fields ) ) {

@@ -18,6 +18,7 @@ if ( ! defined( 'HQC_STRIPE_PAYMENT_INTENT_PLUGIN_FILE' ) ) {
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+
 /**
  * Returns the main instance of WC.
  *

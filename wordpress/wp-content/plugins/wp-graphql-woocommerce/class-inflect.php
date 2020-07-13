@@ -15,7 +15,7 @@ if ( ! class_exists( 'Inflect' ) ) :
 	/**
 	 * Class Inflect
 	 */
-	class Inflect { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound
+	class Inflect {
 		/**
 		 * Stores plural suffixes.
 		 *

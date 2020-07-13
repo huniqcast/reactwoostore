@@ -132,7 +132,6 @@ class Customer_Connection_Resolver extends AbstractConnectionResolver {
 		}
 
 		$query_args = apply_filters(
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			'graphql_customer_connection_query_args',
 			$query_args,
 			$this->source,

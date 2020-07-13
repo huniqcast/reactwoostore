@@ -4,22 +4,24 @@
  *
  * Registers Order WPObject type and queries
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.0.1
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPObject;
 
 use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
+use WPGraphQL\Type\WPObjectType;
 use WPGraphQL\WooCommerce\Data\Factory;
+use WPGraphQL\WooCommerce\Model\Order;
 
 /**
  * Class Order_Type
  */
 class Order_Type {
-
 	/**
 	 * Register Order type and queries to the WPGraphQL schema
 	 */
@@ -137,10 +139,10 @@ class Order_Type {
 							if ( isset( $args['format'] ) && 'raw' === $args['format'] ) {
 								// @codingStandardsIgnoreLine.
 								return $source->shippingTotalRaw;
+							} else {
+								// @codingStandardsIgnoreLine.
+								return $source->shippingTotal;
 							}
-
-							// @codingStandardsIgnoreLine.
-							return $source->shippingTotal;
 						},
 					),
 					'shippingTax'           => array(
@@ -156,10 +158,10 @@ class Order_Type {
 							if ( isset( $args['format'] ) && 'raw' === $args['format'] ) {
 								// @codingStandardsIgnoreLine.
 								return $source->shippingTaxRaw;
+							} else {
+								// @codingStandardsIgnoreLine.
+								return $source->shippingTax;
 							}
-
-							// @codingStandardsIgnoreLine.
-							return $source->shippingTax;
 						},
 					),
 					'cartTax'               => array(
@@ -352,11 +354,15 @@ class Order_Type {
 						),
 					),
 				),
-				'resolve'     => function ( $source, array $args, AppContext $context ) {
+				'resolve'     => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$id = isset( $args['id'] ) ? $args['id'] : null;
 					$id_type = isset( $args['idType'] ) ? $args['idType'] : 'global_id';
 
-					// Process deprecated arguments. Will be removed in v0.5.x.
+					/**
+					 * Process deprecated arguments
+					 *
+					 * Will be removed in v0.5.x.
+					 */
 					if ( ! empty( $args['orderId'] ) ) {
 						$id = $args['orderId'];
 						$id_type = 'database_id';
@@ -385,10 +391,10 @@ class Order_Type {
 
 					if ( empty( $order_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No order ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No order ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $order_id )->post_type !== 'shop_order' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No order exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No order exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
 					// Check if user authorized to view order.

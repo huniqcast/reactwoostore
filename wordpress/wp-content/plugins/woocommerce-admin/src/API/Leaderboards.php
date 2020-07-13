@@ -28,7 +28,7 @@ class Leaderboards extends \WC_REST_Data_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -194,7 +194,7 @@ class Leaderboards extends \WC_REST_Data_Controller {
 					'label' => __( 'Items Sold', 'woocommerce-admin' ),
 				),
 				array(
-					'label' => __( 'Net Sales', 'woocommerce-admin' ),
+					'label' => __( 'Net Revenue', 'woocommerce-admin' ),
 				),
 			),
 			'rows'    => $rows,
@@ -324,7 +324,7 @@ class Leaderboards extends \WC_REST_Data_Controller {
 					'label' => __( 'Items Sold', 'woocommerce-admin' ),
 				),
 				array(
-					'label' => __( 'Net Sales', 'woocommerce-admin' ),
+					'label' => __( 'Net Revenue', 'woocommerce-admin' ),
 				),
 			),
 			'rows'    => $rows,

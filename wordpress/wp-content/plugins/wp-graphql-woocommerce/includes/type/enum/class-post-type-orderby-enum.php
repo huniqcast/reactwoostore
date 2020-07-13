@@ -3,7 +3,7 @@
  * WPEnum type - Post_Type_Orderby_Enum
  * Defines common post-type ordering fields
  *
- * @package WPGraphQL\WooCommerce\Type\WPEnum
+ * @package \WPGraphQL\WooCommerce\Type\WPEnum
  * @since   0.2.2
  */
 
@@ -80,7 +80,6 @@ class Post_Type_Orderby_Enum {
 					__( 'Fields to order the %s connection by', 'wp-graphql-woocommerce' ),
 					$name
 				),
-				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 				'values'      => apply_filters( "{$name}_orderby_enum_values", static::values() ),
 			)
 		);

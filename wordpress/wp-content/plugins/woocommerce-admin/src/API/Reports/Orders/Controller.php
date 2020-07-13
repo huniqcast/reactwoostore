@@ -11,23 +11,20 @@ namespace Automattic\WooCommerce\Admin\API\Reports\Orders;
 
 defined( 'ABSPATH' ) || exit;
 
-use \Automattic\WooCommerce\Admin\API\Reports\Controller as ReportsController;
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableInterface;
-
 /**
  * REST API Reports orders controller class.
  *
  * @package WooCommerce/API
  * @extends \Automattic\WooCommerce\Admin\API\Reports\Controller
  */
-class Controller extends ReportsController implements ExportableInterface {
+class Controller extends \Automattic\WooCommerce\Admin\API\Reports\Controller {
 
 	/**
 	 * Endpoint namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -43,27 +40,25 @@ class Controller extends ReportsController implements ExportableInterface {
 	 * @return array
 	 */
 	protected function prepare_reports_query( $request ) {
-		$args                      = array();
-		$args['before']            = $request['before'];
-		$args['after']             = $request['after'];
-		$args['page']              = $request['page'];
-		$args['per_page']          = $request['per_page'];
-		$args['orderby']           = $request['orderby'];
-		$args['order']             = $request['order'];
-		$args['product_includes']  = (array) $request['product_includes'];
-		$args['product_excludes']  = (array) $request['product_excludes'];
-		$args['coupon_includes']   = (array) $request['coupon_includes'];
-		$args['coupon_excludes']   = (array) $request['coupon_excludes'];
-		$args['tax_rate_includes'] = (array) $request['tax_rate_includes'];
-		$args['tax_rate_excludes'] = (array) $request['tax_rate_excludes'];
-		$args['status_is']         = (array) $request['status_is'];
-		$args['status_is_not']     = (array) $request['status_is_not'];
-		$args['customer_type']     = $request['customer_type'];
-		$args['extended_info']     = $request['extended_info'];
-		$args['refunds']           = $request['refunds'];
-		$args['match']             = $request['match'];
-		$args['order_includes']    = $request['order_includes'];
-		$args['order_excludes']    = $request['order_excludes'];
+		$args                     = array();
+		$args['before']           = $request['before'];
+		$args['after']            = $request['after'];
+		$args['page']             = $request['page'];
+		$args['per_page']         = $request['per_page'];
+		$args['orderby']          = $request['orderby'];
+		$args['order']            = $request['order'];
+		$args['product_includes'] = (array) $request['product_includes'];
+		$args['product_excludes'] = (array) $request['product_excludes'];
+		$args['coupon_includes']  = (array) $request['coupon_includes'];
+		$args['coupon_excludes']  = (array) $request['coupon_excludes'];
+		$args['status_is']        = (array) $request['status_is'];
+		$args['status_is_not']    = (array) $request['status_is_not'];
+		$args['customer_type']    = $request['customer_type'];
+		$args['extended_info']    = $request['extended_info'];
+		$args['refunds']          = $request['refunds'];
+		$args['match']            = $request['match'];
+		$args['order_includes']   = $request['order_includes'];
+		$args['order_excludes']   = $request['order_excludes'];
 
 		return $args;
 	}
@@ -254,9 +249,9 @@ class Controller extends ReportsController implements ExportableInterface {
 	 * @return array
 	 */
 	public function get_collection_params() {
-		$params                      = array();
-		$params['context']           = $this->get_context_param( array( 'default' => 'view' ) );
-		$params['page']              = array(
+		$params                     = array();
+		$params['context']          = $this->get_context_param( array( 'default' => 'view' ) );
+		$params['page']             = array(
 			'description'       => __( 'Current page of the collection.', 'woocommerce-admin' ),
 			'type'              => 'integer',
 			'default'           => 1,
@@ -264,7 +259,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			'validate_callback' => 'rest_validate_request_arg',
 			'minimum'           => 1,
 		);
-		$params['per_page']          = array(
+		$params['per_page']         = array(
 			'description'       => __( 'Maximum number of items to be returned in result set.', 'woocommerce-admin' ),
 			'type'              => 'integer',
 			'default'           => 10,
@@ -273,26 +268,26 @@ class Controller extends ReportsController implements ExportableInterface {
 			'sanitize_callback' => 'absint',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['after']             = array(
+		$params['after']            = array(
 			'description'       => __( 'Limit response to resources published after a given ISO8601 compliant date.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'format'            => 'date-time',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['before']            = array(
+		$params['before']           = array(
 			'description'       => __( 'Limit response to resources published before a given ISO8601 compliant date.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'format'            => 'date-time',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['order']             = array(
+		$params['order']            = array(
 			'description'       => __( 'Order sort attribute ascending or descending.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'default'           => 'desc',
 			'enum'              => array( 'asc', 'desc' ),
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['orderby']           = array(
+		$params['orderby']          = array(
 			'description'       => __( 'Sort collection by object attribute.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'default'           => 'date',
@@ -303,7 +298,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			),
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['product_includes']  = array(
+		$params['product_includes'] = array(
 			'description'       => __( 'Limit result set to items that have the specified product(s) assigned.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'items'             => array(
@@ -313,7 +308,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			'sanitize_callback' => 'wp_parse_id_list',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['product_excludes']  = array(
+		$params['product_excludes'] = array(
 			'description'       => __( 'Limit result set to items that don\'t have the specified product(s) assigned.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'items'             => array(
@@ -323,7 +318,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			'validate_callback' => 'rest_validate_request_arg',
 			'sanitize_callback' => 'wp_parse_id_list',
 		);
-		$params['coupon_includes']   = array(
+		$params['coupon_includes']  = array(
 			'description'       => __( 'Limit result set to items that have the specified coupon(s) assigned.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'items'             => array(
@@ -333,7 +328,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			'sanitize_callback' => 'wp_parse_id_list',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['coupon_excludes']   = array(
+		$params['coupon_excludes']  = array(
 			'description'       => __( 'Limit result set to items that don\'t have the specified coupon(s) assigned.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'items'             => array(
@@ -343,27 +338,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			'validate_callback' => 'rest_validate_request_arg',
 			'sanitize_callback' => 'wp_parse_id_list',
 		);
-		$params['tax_rate_includes'] = array(
-			'description'       => __( 'Limit result set to items that have the specified tax rate(s) assigned.', 'woocommerce-admin' ),
-			'type'              => 'array',
-			'items'             => array(
-				'type' => 'integer',
-			),
-			'default'           => array(),
-			'sanitize_callback' => 'wp_parse_id_list',
-			'validate_callback' => 'rest_validate_request_arg',
-		);
-		$params['tax_rate_excludes'] = array(
-			'description'       => __( 'Limit result set to items that don\'t have the specified tax rate(s) assigned.', 'woocommerce-admin' ),
-			'type'              => 'array',
-			'items'             => array(
-				'type' => 'integer',
-			),
-			'default'           => array(),
-			'validate_callback' => 'rest_validate_request_arg',
-			'sanitize_callback' => 'wp_parse_id_list',
-		);
-		$params['status_is']         = array(
+		$params['status_is']        = array(
 			'description'       => __( 'Limit result set to items that have the specified order status.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'sanitize_callback' => 'wp_parse_slug_list',
@@ -373,7 +348,7 @@ class Controller extends ReportsController implements ExportableInterface {
 				'type' => 'string',
 			),
 		);
-		$params['status_is_not']     = array(
+		$params['status_is_not']    = array(
 			'description'       => __( 'Limit result set to items that don\'t have the specified order status.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'sanitize_callback' => 'wp_parse_slug_list',
@@ -383,7 +358,7 @@ class Controller extends ReportsController implements ExportableInterface {
 				'type' => 'string',
 			),
 		);
-		$params['customer_type']     = array(
+		$params['customer_type']    = array(
 			'description'       => __( 'Limit result set to returning or new customers.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'default'           => '',
@@ -394,7 +369,7 @@ class Controller extends ReportsController implements ExportableInterface {
 			),
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['refunds']           = array(
+		$params['refunds']          = array(
 			'description'       => __( 'Limit result set to specific types of refunds.', 'woocommerce-admin' ),
 			'type'              => 'string',
 			'default'           => '',
@@ -407,14 +382,14 @@ class Controller extends ReportsController implements ExportableInterface {
 			),
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['extended_info']     = array(
+		$params['extended_info']    = array(
 			'description'       => __( 'Add additional piece of info about each coupon to the report.', 'woocommerce-admin' ),
 			'type'              => 'boolean',
 			'default'           => false,
 			'sanitize_callback' => 'wc_string_to_bool',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['order_includes']    = array(
+		$params['order_includes']   = array(
 			'description'       => __( 'Limit result set to items that have the specified order ids.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'sanitize_callback' => 'wp_parse_id_list',
@@ -423,7 +398,7 @@ class Controller extends ReportsController implements ExportableInterface {
 				'type' => 'integer',
 			),
 		);
-		$params['order_excludes']    = array(
+		$params['order_excludes']   = array(
 			'description'       => __( 'Limit result set to items that don\'t have the specified order ids.', 'woocommerce-admin' ),
 			'type'              => 'array',
 			'sanitize_callback' => 'wp_parse_id_list',
@@ -434,73 +409,5 @@ class Controller extends ReportsController implements ExportableInterface {
 		);
 
 		return $params;
-	}
-
-	/**
-	 * Get products column export value.
-	 *
-	 * @param array $products Products from report row.
-	 * @return string
-	 */
-	protected function _get_products( $products ) {
-		$products_list = array();
-
-		foreach ( $products as $product ) {
-			$products_list[] = sprintf(
-				/* translators: 1: numeric product quantity, 2: name of product */
-				__( '%1$s× %2$s', 'woocommerce-admin' ),
-				$product['quantity'],
-				$product['name']
-			);
-		}
-
-		return implode( ', ', $products_list );
-	}
-
-	/**
-	 * Get coupons column export value.
-	 *
-	 * @param array $coupons Coupons from report row.
-	 * @return string
-	 */
-	protected function _get_coupons( $coupons ) {
-		return implode( ', ', wp_list_pluck( $coupons, 'code' ) );
-	}
-
-	/**
-	 * Get the column names for export.
-	 *
-	 * @return array Key value pair of Column ID => Label.
-	 */
-	public function get_export_columns() {
-		return array(
-			'date_created'   => __( 'Date', 'woocommerce-admin' ),
-			'order_number'   => __( 'Order #', 'woocommerce-admin' ),
-			'status'         => __( 'Status', 'woocommerce-admin' ),
-			'customer_type'  => __( 'Customer', 'woocommerce-admin' ),
-			'products'       => __( 'Product(s)', 'woocommerce-admin' ),
-			'num_items_sold' => __( 'Items Sold', 'woocommerce-admin' ),
-			'coupons'        => __( 'Coupon(s)', 'woocommerce-admin' ),
-			'net_total'      => __( 'N. Revenue', 'woocommerce-admin' ),
-		);
-	}
-
-	/**
-	 * Get the column values for export.
-	 *
-	 * @param array $item Single report item/row.
-	 * @return array Key value pair of Column ID => Row Value.
-	 */
-	public function prepare_item_for_export( $item ) {
-		return array(
-			'date_created'   => $item['date_created'],
-			'order_number'   => $item['order_number'],
-			'status'         => $item['status'],
-			'customer_type'  => $item['customer_type'],
-			'products'       => isset( $item['extended_info']['products'] ) ? $this->_get_products( $item['extended_info']['products'] ) : null,
-			'num_items_sold' => $item['num_items_sold'],
-			'coupons'        => isset( $item['extended_info']['coupons'] ) ? $this->_get_coupons( $item['extended_info']['coupons'] ) : null,
-			'net_total'      => $item['net_total'],
-		);
 	}
 }

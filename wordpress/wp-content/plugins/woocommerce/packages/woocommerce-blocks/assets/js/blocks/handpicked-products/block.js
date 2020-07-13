@@ -19,12 +19,14 @@ import {
 } from '@wordpress/components';
 import { Component, Fragment } from '@wordpress/element';
 import PropTypes from 'prop-types';
-import { MAX_COLUMNS, MIN_COLUMNS } from '@woocommerce/block-settings';
-import GridContentControl from '@woocommerce/block-components/grid-content-control';
-import { IconWidgets } from '@woocommerce/block-components/icons';
-import ProductsControl from '@woocommerce/block-components/products-control';
-import ProductOrderbyControl from '@woocommerce/block-components/product-orderby-control';
-import { gridBlockPreview } from '@woocommerce/resource-previews';
+
+/**
+ * Internal dependencies
+ */
+import GridContentControl from '../../components/grid-content-control';
+import { IconWidgets } from '../../components/icons';
+import ProductsControl from '../../components/products-control';
+import ProductOrderbyControl from '../../components/product-orderby-control';
 
 /**
  * Component to handle edit mode of "Hand-picked Products".
@@ -32,66 +34,49 @@ import { gridBlockPreview } from '@woocommerce/resource-previews';
 class ProductsBlock extends Component {
 	getInspectorControls() {
 		const { attributes, setAttributes } = this.props;
-		const {
-			columns,
-			contentVisibility,
-			orderby,
-			alignButtons,
-		} = attributes;
+		const { columns, contentVisibility, orderby, alignButtons } = attributes;
 
 		return (
 			<InspectorControls key="inspector">
 				<PanelBody
-					title={ __( 'Layout', 'woocommerce' ) }
+					title={ __( 'Layout', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<RangeControl
-						label={ __(
-							'Columns',
-							'woocommerce'
-						) }
+						label={ __( 'Columns', 'woo-gutenberg-products-block' ) }
 						value={ columns }
-						onChange={ ( value ) =>
-							setAttributes( { columns: value } )
-						}
-						min={ MIN_COLUMNS }
-						max={ MAX_COLUMNS }
+						onChange={ ( value ) => setAttributes( { columns: value } ) }
+						min={ wc_product_block_data.min_columns }
+						max={ wc_product_block_data.max_columns }
 					/>
 					<ToggleControl
-						label={ __(
-							'Align Buttons',
-							'woocommerce'
-						) }
+						label={ __( 'Align Add to Cart buttons', 'woo-gutenberg-products-block' ) }
 						help={
-							alignButtons
-								? __(
-										'Buttons are aligned vertically.',
-										'woocommerce'
-								  )
-								: __(
-										'Buttons follow content.',
-										'woocommerce'
-								  )
+							alignButtons ?
+								__(
+									'Buttons are aligned vertically.',
+									'woo-gutenberg-products-block'
+								) :
+								__(
+									'Buttons follow content.',
+									'woo-gutenberg-products-block'
+								)
 						}
 						checked={ alignButtons }
-						onChange={ () =>
-							setAttributes( { alignButtons: ! alignButtons } )
-						}
+						onChange={ () => setAttributes( { alignButtons: ! alignButtons } ) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Content', 'woocommerce' ) }
+					title={ __( 'Content', 'woo-gutenberg-products-block' ) }
 					initialOpen
 				>
 					<GridContentControl
 						settings={ contentVisibility }
-						onChange={ ( value ) =>
-							setAttributes( { contentVisibility: value } )
-						}
+						onChange={ ( value ) => setAttributes( { contentVisibility: value } ) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Order By', 'woocommerce' ) }
+					title={ __( 'Order By', 'woo-gutenberg-products-block' ) }
 					initialOpen={ false }
 				>
 					<ProductOrderbyControl
@@ -100,7 +85,7 @@ class ProductsBlock extends Component {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Products', 'woocommerce' ) }
+					title={ __( 'Products', 'woo-gutenberg-products-block' ) }
 					initialOpen={ false }
 				>
 					<ProductsControl
@@ -122,7 +107,7 @@ class ProductsBlock extends Component {
 			debouncedSpeak(
 				__(
 					'Showing Hand-picked Products block preview.',
-					'woocommerce'
+					'woo-gutenberg-products-block'
 				)
 			);
 		};
@@ -130,15 +115,12 @@ class ProductsBlock extends Component {
 		return (
 			<Placeholder
 				icon={ <IconWidgets /> }
-				label={ __(
-					'Hand-picked Products',
-					'woocommerce'
-				) }
+				label={ __( 'Hand-picked Products', 'woo-gutenberg-products-block' ) }
 				className="wc-block-products-grid wc-block-handpicked-products"
 			>
 				{ __(
-					'Display a selection of hand-picked products in a grid.',
-					'woocommerce'
+					'Display a selection of hand-picked products in a grid',
+					'woo-gutenberg-products-block'
 				) }
 				<div className="wc-block-handpicked-products__selection">
 					<ProductsControl
@@ -149,7 +131,7 @@ class ProductsBlock extends Component {
 						} }
 					/>
 					<Button isDefault onClick={ onDone }>
-						{ __( 'Done', 'woocommerce' ) }
+						{ __( 'Done', 'woo-gutenberg-products-block' ) }
 					</Button>
 				</div>
 			</Placeholder>
@@ -160,10 +142,6 @@ class ProductsBlock extends Component {
 		const { attributes, name, setAttributes } = this.props;
 		const { editMode } = attributes;
 
-		if ( attributes.isPreview ) {
-			return gridBlockPreview;
-		}
-
 		return (
 			<Fragment>
 				<BlockControls>
@@ -172,8 +150,7 @@ class ProductsBlock extends Component {
 							{
 								icon: 'edit',
 								title: __( 'Edit' ),
-								onClick: () =>
-									setAttributes( { editMode: ! editMode } ),
+								onClick: () => setAttributes( { editMode: ! editMode } ),
 								isActive: editMode,
 							},
 						] }
@@ -184,10 +161,7 @@ class ProductsBlock extends Component {
 					this.renderEditMode()
 				) : (
 					<Disabled>
-						<ServerSideRender
-							block={ name }
-							attributes={ attributes }
-						/>
+						<ServerSideRender block={ name } attributes={ attributes } />
 					</Disabled>
 				) }
 			</Fragment>

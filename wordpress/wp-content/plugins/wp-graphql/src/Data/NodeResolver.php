@@ -290,7 +290,7 @@ class NodeResolver {
 			}
 
 			$args  = array(
-				'page_id'             => absint( $this->wp->query_vars['page_id'] ),
+				'ID'                  => absint( $this->wp->query_vars['page_id'] ),
 				'post_type'           => $post_type,
 				'post_status'         => 'publish',
 				'posts_per_page'      => 1,
@@ -311,7 +311,7 @@ class NodeResolver {
 			}
 
 			$args  = array(
-				'p'                   => absint( $this->wp->query_vars['p'] ),
+				'ID'                  => absint( $this->wp->query_vars['p'] ),
 				'post_type'           => $post_type,
 				'post_status'         => 'publish',
 				'posts_per_page'      => 1,
@@ -353,9 +353,17 @@ class NodeResolver {
 
 			return ! empty( $node ) ? new Term( $node ) : null;
 		} elseif ( isset( $this->wp->query_vars['pagename'] ) && ! empty( $this->wp->query_vars['pagename'] ) ) {
-			$post = get_page_by_path( $this->wp->query_vars['pagename'], 'OBJECT', get_post_types( [ 'show_in_graphql' => true ] ) );
+			$args  = array(
+				'name'                => $this->wp->query_vars['pagename'],
+				'post_type'           => 'page',
+				'post_status'         => 'publish',
+				'posts_per_page'      => 1,
+				'ignore_sticky_posts' => true,
+				'no_found_rows'       => true,
+			);
+			$posts = new \WP_Query( $args );
 
-			return ! empty( $post ) ? new Post( $post ) : null;
+			return ! empty( $posts->posts[0] ) ? new Post( $posts->posts[0] ) : null;
 		} elseif ( isset( $this->wp->query_vars['author_name'] ) ) {
 			$user = get_user_by( 'slug', $this->wp->query_vars['author_name'] );
 

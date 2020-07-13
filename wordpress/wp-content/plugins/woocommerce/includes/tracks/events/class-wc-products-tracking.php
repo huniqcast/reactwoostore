@@ -5,8 +5,6 @@
  * @package WooCommerce\Tracks
  */
 
-use Automattic\Jetpack\Constants;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -69,11 +67,11 @@ class WC_Products_Tracking {
 	 * @param int $category_id Category ID.
 	 */
 	public function track_product_category_created( $category_id ) {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		// phpcs:disable WordPress.Security.NonceVerification.NoNonceVerification
 		// Only track category creation from the edit product screen or the
 		// category management screen (which both occur via AJAX).
 		if (
-			! Constants::is_defined( 'DOING_AJAX' ) ||
+			! defined( 'DOING_AJAX' ) ||
 			empty( $_POST['action'] ) ||
 			(
 				// Product Categories screen.

@@ -12,7 +12,6 @@ defined( 'ABSPATH' ) || exit;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
-use \Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 
 /**
  * API\Reports\Categories\DataStore.
@@ -24,14 +23,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 *
 	 * @var string
 	 */
-	protected static $table_name = 'wc_order_product_lookup';
-
-	/**
-	 * Cache identifier.
-	 *
-	 * @var string
-	 */
-	protected $cache_key = 'categories';
+	const TABLE_NAME = 'wc_order_product_lookup';
 
 	/**
 	 * Order by setting used for sorting categories data.
@@ -61,87 +53,102 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	);
 
 	/**
-	 * Data store context used to pass to filters.
+	 * SQL columns to select in the db query.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected $context = 'categories';
+	protected $report_columns = array(
+		'items_sold'     => 'SUM(product_qty) as items_sold',
+		'net_revenue'    => 'SUM(product_net_revenue) AS net_revenue',
+		'orders_count'   => 'COUNT(DISTINCT order_id) as orders_count',
+		'products_count' => 'COUNT(DISTINCT product_id) as products_count',
+	);
 
 	/**
-	 * Assign report columns once full table name has been assigned.
+	 * Constructor
 	 */
-	protected function assign_report_columns() {
-		$table_name           = self::get_db_table_name();
-		$this->report_columns = array(
-			'items_sold'     => 'SUM(product_qty) as items_sold',
-			'net_revenue'    => 'SUM(product_net_revenue) AS net_revenue',
-			'orders_count'   => "COUNT(DISTINCT {$table_name}.order_id) as orders_count",
-			'products_count' => "COUNT(DISTINCT {$table_name}.product_id) as products_count",
-		);
+	public function __construct() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
+		// Avoid ambigious column order_id in SQL query.
+		$this->report_columns['orders_count'] = str_replace( 'order_id', $table_name . '.order_id', $this->report_columns['orders_count'] );
 	}
 
 	/**
 	 * Return the database query with parameters used for Categories report: time span and order status.
 	 *
 	 * @param array $query_args Query arguments supplied by the user.
+	 * @return array            Array of parameters used for SQL query.
 	 */
-	protected function add_sql_query_params( $query_args ) {
+	protected function get_sql_query_params( $query_args ) {
 		global $wpdb;
-		$order_product_lookup_table = self::get_db_table_name();
+		$order_product_lookup_table = $wpdb->prefix . self::TABLE_NAME;
 
-		$this->add_time_period_sql_params( $query_args, $order_product_lookup_table );
+		$sql_query_params = $this->get_time_period_sql_params( $query_args, $order_product_lookup_table );
 
 		// join wp_order_product_lookup_table with relationships and taxonomies
 		// @todo How to handle custom product tables?
-		$this->subquery->add_sql_clause( 'left_join', "LEFT JOIN {$wpdb->term_relationships} ON {$order_product_lookup_table}.product_id = {$wpdb->term_relationships}.object_id" );
-		$this->subquery->add_sql_clause( 'left_join', "LEFT JOIN {$wpdb->wc_category_lookup} ON {$wpdb->term_relationships}.term_taxonomy_id = {$wpdb->wc_category_lookup}.category_id" );
+		$sql_query_params['from_clause'] .= " LEFT JOIN {$wpdb->prefix}term_relationships ON {$order_product_lookup_table}.product_id = {$wpdb->prefix}term_relationships.object_id";
+		$sql_query_params['from_clause'] .= " LEFT JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id";
 
 		$included_categories = $this->get_included_categories( $query_args );
 		if ( $included_categories ) {
-			$this->subquery->add_sql_clause( 'where', "AND {$wpdb->wc_category_lookup}.category_tree_id IN ({$included_categories})" );
+			$sql_query_params['where_clause'] .= " AND {$wpdb->prefix}term_taxonomy.term_id IN ({$included_categories})";
 
 			// Limit is left out here so that the grouping in code by PHP can be applied correctly.
 			// This also needs to be put after the term_taxonomy JOIN so that we can match the correct term name.
-			$this->add_order_by_params( $query_args, 'outer', 'default_results.category_id' );
+			$sql_query_params = $this->get_order_by_params( $query_args, $sql_query_params, 'outer_from_clause', 'default_results.category_id' );
 		} else {
-			$this->add_order_by_params( $query_args, 'inner', "{$wpdb->wc_category_lookup}.category_tree_id" );
+			$sql_query_params = $this->get_order_by_params( $query_args, $sql_query_params, 'from_clause', "{$wpdb->prefix}term_taxonomy.term_id" );
 		}
 
 		// @todo Only products in the category C or orders with products from category C (and, possibly others?).
 		$included_products = $this->get_included_products( $query_args );
 		if ( $included_products ) {
-			$this->subquery->add_sql_clause( 'where', "AND {$order_product_lookup_table}.product_id IN ({$included_products})" );
+			$sql_query_params['where_clause'] .= " AND {$order_product_lookup_table}.product_id IN ({$included_products})";
 		}
 
-		$this->add_order_status_clause( $query_args, $order_product_lookup_table, $this->subquery );
-		$this->subquery->add_sql_clause( 'where', "AND {$wpdb->wc_category_lookup}.category_tree_id IS NOT NULL" );
+		$order_status_filter = $this->get_status_subquery( $query_args );
+		if ( $order_status_filter ) {
+			$sql_query_params['from_clause']  .= " JOIN {$wpdb->prefix}wc_order_stats ON {$order_product_lookup_table}.order_id = {$wpdb->prefix}wc_order_stats.order_id";
+			$sql_query_params['where_clause'] .= " AND ( {$order_status_filter} )";
+		}
+
+		$sql_query_params['where_clause'] .= " AND taxonomy = 'product_cat' ";
+
+		return $sql_query_params;
 	}
 
 	/**
 	 * Fills ORDER BY clause of SQL request based on user supplied parameters.
 	 *
 	 * @param array  $query_args Parameters supplied by the user.
-	 * @param string $from_arg   Target of the JOIN sql param.
+	 * @param array  $sql_query  Current SQL query array.
+	 * @param string $from_arg   Name of the FROM sql param.
 	 * @param string $id_cell    ID cell identifier, like `table_name.id_column_name`.
+	 * @return array
 	 */
-	protected function add_order_by_params( $query_args, $from_arg, $id_cell ) {
+	protected function get_order_by_params( $query_args, $sql_query, $from_arg, $id_cell ) {
 		global $wpdb;
-		$lookup_table    = self::get_db_table_name();
-		$order_by_clause = $this->add_order_by_clause( $query_args, $this );
-		$this->add_orderby_order_clause( $query_args, $this );
+		$lookup_table = $wpdb->prefix . self::TABLE_NAME;
 
-		if ( false !== strpos( $order_by_clause, '_terms' ) ) {
-			$join = "JOIN {$wpdb->terms} AS _terms ON {$id_cell} = _terms.term_id";
-			if ( 'inner' === $from_arg ) {
-				// Even though this is an (inner) JOIN, we're adding it as a `left_join` to
-				// affect its order in the query statement. The SqlQuery::$sql_filters variable
-				// determines the order in which joins are concatenated.
-				// See: https://github.com/woocommerce/woocommerce-admin/blob/1f261998e7287b77bc13c3d4ee2e84b717da7957/src/API/Reports/SqlQuery.php#L46-L50.
-				$this->subquery->add_sql_clause( 'left_join', $join );
-			} else {
-				$this->add_sql_clause( 'join', $join );
-			}
+		$sql_query['order_by_clause'] = '';
+		if ( isset( $query_args['orderby'] ) ) {
+			$sql_query['order_by_clause'] = $this->normalize_order_by( $query_args['orderby'] );
 		}
+
+		$sql_query['outer_from_clause'] = '';
+		if ( false !== strpos( $sql_query['order_by_clause'], '_terms' ) ) {
+			$sql_query[ $from_arg ] .= " JOIN {$wpdb->prefix}terms AS _terms ON {$id_cell} = _terms.term_id";
+		}
+
+		if ( isset( $query_args['order'] ) ) {
+			$sql_query['order_by_clause'] .= ' ' . $query_args['order'];
+		} else {
+			$sql_query['order_by_clause'] .= ' DESC';
+		}
+
+		return $sql_query;
 	}
 
 	/**
@@ -171,6 +178,17 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			return $query_args['categories'];
 		}
 		return array();
+	}
+
+	/**
+	 * Returns comma separated ids of included categories, based on query arguments from the user.
+	 *
+	 * @param array $query_args Parameters supplied by the user.
+	 * @return string
+	 */
+	protected function get_included_categories( $query_args ) {
+		$included_categories = $this->get_included_categories_array( $query_args );
+		return implode( ',', $included_categories );
 	}
 
 	/**
@@ -211,7 +229,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	public function get_data( $query_args ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		// These defaults are only partially applied when used via REST API, as that has its own defaults.
 		$defaults   = array(
@@ -228,16 +246,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		$query_args = wp_parse_args( $query_args, $defaults );
 		$this->normalize_timezones( $query_args, $defaults );
 
-		/*
-		 * We need to get the cache key here because
-		 * parent::update_intervals_sql_params() modifies $query_args.
-		 */
 		$cache_key = $this->get_cache_key( $query_args );
-		$data      = $this->get_cached_data( $cache_key );
+		$data      = wp_cache_get( $cache_key, $this->cache_group );
 
 		if ( false === $data ) {
-			$this->initialize_queries();
-
 			$data = (object) array(
 				'data'    => array(),
 				'total'   => 0,
@@ -245,36 +257,50 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no' => 0,
 			);
 
-			$this->subquery->add_sql_clause( 'select', $this->selected_columns( $query_args ) );
+			$selections          = $this->selected_columns( $query_args );
+			$sql_query_params    = $this->get_sql_query_params( $query_args );
 			$included_categories = $this->get_included_categories_array( $query_args );
-			$this->add_sql_query_params( $query_args );
 
 			if ( count( $included_categories ) > 0 ) {
-				$fields    = $this->get_fields( $query_args );
-				$ids_table = $this->get_ids_table( $included_categories, 'category_id' );
+				$fields          = $this->get_fields( $query_args );
+				$join_selections = $this->format_join_selections( array_merge( array( 'category_id' ), $fields ), array( 'category_id' ) );
+				$ids_table       = $this->get_ids_table( $included_categories, 'category_id' );
 
-				$this->add_sql_clause( 'select', $this->format_join_selections( array_merge( array( 'category_id' ), $fields ), array( 'category_id' ) ) );
-				$this->add_sql_clause( 'from', '(' );
-				$this->add_sql_clause( 'from', $this->subquery->get_query_statement() );
-				$this->add_sql_clause( 'from', ") AS {$table_name}" );
-				$this->add_sql_clause(
-					'right_join',
-					"RIGHT JOIN ( {$ids_table} ) AS default_results
-					ON default_results.category_id = {$table_name}.category_id"
-				);
-
-				$categories_query = $this->get_query_statement();
+				$prefix     = "SELECT {$join_selections} FROM (";
+				$suffix     = ") AS {$table_name}";
+				$right_join = "RIGHT JOIN ( {$ids_table} ) AS default_results
+					ON default_results.category_id = {$table_name}.category_id";
 			} else {
-				$this->subquery->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
-				$categories_query = $this->subquery->get_query_statement();
+				$prefix     = '';
+				$suffix     = '';
+				$right_join = '';
 			}
+
 			$categories_data = $wpdb->get_results(
-				$categories_query,
+				"${prefix}
+					SELECT
+						{$wpdb->prefix}term_taxonomy.term_id as category_id,
+						{$selections}
+					FROM
+						{$table_name}
+						{$sql_query_params['from_clause']}
+					WHERE
+						1=1
+						{$sql_query_params['where_time_clause']}
+						{$sql_query_params['where_clause']}
+					GROUP BY
+						category_id
+				{$suffix}
+					{$right_join}
+					{$sql_query_params['outer_from_clause']}
+					ORDER BY
+						{$sql_query_params['order_by_clause']}
+					",
 				ARRAY_A
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
 			if ( null === $categories_data ) {
-				return new \WP_Error( 'woocommerce_analytics_categories_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ), array( 'status' => 500 ) );
+				return new \WP_Error( 'woocommerce_reports_categories_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ), array( 'status' => 500 ) );
 			}
 
 			$record_count = count( $categories_data );
@@ -293,20 +319,19 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no' => (int) $query_args['page'],
 			);
 
-			$this->set_cached_data( $cache_key, $data );
+			wp_cache_set( $cache_key, $data, $this->cache_group );
 		}
 
 		return $data;
 	}
 
 	/**
-	 * Initialize query objects.
+	 * Returns string to be used as cache key for the data.
+	 *
+	 * @param array $params Query parameters.
+	 * @return string
 	 */
-	protected function initialize_queries() {
-		global $wpdb;
-		$this->subquery = new SqlQuery( $this->context . '_subquery' );
-		$this->subquery->add_sql_clause( 'select', "{$wpdb->wc_category_lookup}.category_tree_id as category_id," );
-		$this->subquery->add_sql_clause( 'from', self::get_db_table_name() );
-		$this->subquery->add_sql_clause( 'group_by', "{$wpdb->wc_category_lookup}.category_tree_id" );
+	protected function get_cache_key( $params ) {
+		return 'woocommerce_' . self::TABLE_NAME . '_' . md5( wp_json_encode( $params ) );
 	}
 }

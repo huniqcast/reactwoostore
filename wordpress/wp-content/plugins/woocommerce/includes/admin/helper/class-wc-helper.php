@@ -6,8 +6,6 @@
  * @package  WooCommerce/Admin
  */
 
-use Automattic\Jetpack\Constants;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -470,7 +468,7 @@ class WC_Helper {
 		$wc_screen_id = sanitize_title( __( 'WooCommerce', 'woocommerce' ) );
 
 		if ( $wc_screen_id . '_page_wc-addons' === $screen_id && isset( $_GET['section'] ) && 'helper' === $_GET['section'] ) {
-			wp_enqueue_style( 'woocommerce-helper', WC()->plugin_url() . '/assets/css/helper.css', array(), Constants::get_constant( 'WC_VERSION' ) );
+			wp_enqueue_style( 'woocommerce-helper', WC()->plugin_url() . '/assets/css/helper.css', array(), WC_VERSION );
 		}
 	}
 
@@ -799,13 +797,6 @@ class WC_Helper {
 		if ( class_exists( 'WC_Tracker' ) ) {
 			update_option( 'woocommerce_allow_tracking', 'yes' );
 			WC_Tracker::send_tracking_data( true );
-		}
-
-		// If connecting through in-app purchase, redirects back to WooCommerce.com
-		// for product installation.
-		if ( ! empty( $_GET['wccom-install-url'] ) ) {
-			wp_redirect( wp_unslash( $_GET['wccom-install-url'] ) );
-			exit;
 		}
 
 		wp_safe_redirect(
@@ -1584,7 +1575,7 @@ class WC_Helper {
 		}
 
 		$data = $updates->response['woocommerce/woocommerce.php'];
-		if ( version_compare( Constants::get_constant( 'WC_VERSION' ), $data->new_version, '>=' ) ) {
+		if ( version_compare( WC_VERSION, $data->new_version, '>=' ) ) {
 			return false;
 		}
 
@@ -1594,7 +1585,7 @@ class WC_Helper {
 	/**
 	 * Flush subscriptions cache.
 	 */
-	public static function _flush_subscriptions_cache() {
+	private static function _flush_subscriptions_cache() {
 		delete_transient( '_woocommerce_helper_subscriptions' );
 	}
 
@@ -1667,7 +1658,7 @@ class WC_Helper {
 	 * @param string $level Optional, defaults to info, valid levels: emergency|alert|critical|error|warning|notice|info|debug.
 	 */
 	public static function log( $message, $level = 'info' ) {
-		if ( ! Constants::is_true( 'WP_DEBUG' ) ) {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 			return;
 		}
 

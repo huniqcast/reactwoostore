@@ -4,7 +4,6 @@
 import { __ } from '@wordpress/i18n';
 import Gridicon from 'gridicons';
 import { registerBlockType } from '@wordpress/blocks';
-import { DEFAULT_COLUMNS, DEFAULT_ROWS } from '@woocommerce/block-settings';
 
 /**
  * Internal dependencies
@@ -16,25 +15,20 @@ import { deprecatedConvertToShortcode } from '../../utils/deprecations';
 const blockTypeName = 'woocommerce/products-by-attribute';
 
 registerBlockType( blockTypeName, {
-	title: __( 'Products by Attribute', 'woocommerce' ),
+	title: __( 'Products by Attribute', 'woo-gutenberg-products-block' ),
 	icon: {
 		src: <Gridicon icon="custom-post-type" />,
 		foreground: '#96588a',
 	},
 	category: 'woocommerce',
-	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
+	keywords: [ __( 'WooCommerce', 'woo-gutenberg-products-block' ) ],
 	description: __(
 		'Display a grid of products from your selected attributes.',
-		'woocommerce'
+		'woo-gutenberg-products-block'
 	),
 	supports: {
 		align: [ 'wide', 'full' ],
 		html: false,
-	},
-	example: {
-		attributes: {
-			isPreview: true,
-		},
 	},
 	attributes: {
 		/**
@@ -58,7 +52,7 @@ registerBlockType( blockTypeName, {
 		 */
 		columns: {
 			type: 'number',
-			default: DEFAULT_COLUMNS,
+			default: wc_product_block_data.default_columns,
 		},
 
 		/**
@@ -95,21 +89,13 @@ registerBlockType( blockTypeName, {
 		 */
 		rows: {
 			type: 'number',
-			default: DEFAULT_ROWS,
+			default: wc_product_block_data.default_rows,
 		},
 
 		/**
 		 * How to align cart buttons.
 		 */
 		alignButtons: {
-			type: 'boolean',
-			default: false,
-		},
-
-		/**
-		 * Are we previewing?
-		 */
-		isPreview: {
 			type: 'boolean',
 			default: false,
 		},
@@ -129,7 +115,7 @@ registerBlockType( blockTypeName, {
 				},
 				columns: {
 					type: 'number',
-					default: DEFAULT_COLUMNS,
+					default: wc_product_block_data.default_columns,
 				},
 				editMode: {
 					type: 'boolean',
@@ -150,7 +136,7 @@ registerBlockType( blockTypeName, {
 				},
 				rows: {
 					type: 'number',
-					default: DEFAULT_ROWS,
+					default: wc_product_block_data.default_rows,
 				},
 			},
 			save: deprecatedConvertToShortcode( blockTypeName ),

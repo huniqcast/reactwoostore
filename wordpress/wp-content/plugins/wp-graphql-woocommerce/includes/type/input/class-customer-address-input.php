@@ -2,7 +2,7 @@
 /**
  * WPInputObjectType - CustomerAddressInput
  *
- * @package WPGraphQL\WooCommerce\Type\WPInputObject
+ * @package \WPGraphQL\WooCommerce\Type\WPInputObject
  * @since   0.1.0
  */
 
@@ -12,7 +12,6 @@ namespace WPGraphQL\WooCommerce\Type\WPInputObject;
  * Class Customer_Address_Input
  */
 class Customer_Address_Input {
-
 	/**
 	 * Registers type
 	 */

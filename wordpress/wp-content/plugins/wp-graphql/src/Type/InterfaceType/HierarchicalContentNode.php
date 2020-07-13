@@ -23,7 +23,7 @@ class HierarchicalContentNode {
 						'args'        => [
 							'types' => [
 								'type'        => [
-									'list_of' => 'ContentTypeEnum',
+									'list_of' => 'PostTypeEnum',
 								],
 								'description' => __( 'The types of ancestors to check for. Defaults to the same type as the current object', 'wp-graphql' ),
 							],

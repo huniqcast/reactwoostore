@@ -11,7 +11,6 @@ defined( 'ABSPATH' ) || exit;
 use \Automattic\WooCommerce\Admin\API\Reports\Coupons\DataStore as CouponsDataStore;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
-use \Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
 
 /**
  * API\Reports\Coupons\Stats\DataStore.
@@ -37,73 +36,55 @@ class DataStore extends CouponsDataStore implements DataStoreInterface {
 	 *
 	 * @var array
 	 */
-	protected $report_columns;
+	protected $report_columns = array(
+		'amount'        => 'SUM(discount_amount) as amount',
+		'coupons_count' => 'COUNT(DISTINCT coupon_id) as coupons_count',
+		'orders_count'  => 'COUNT(DISTINCT order_id) as orders_count',
+	);
 
 	/**
-	 * Data store context used to pass to filters.
-	 *
-	 * @var string
+	 * Constructor
 	 */
-	protected $context = 'coupons_stats';
-
-	/**
-	 * Cache identifier.
-	 *
-	 * @var string
-	 */
-	protected $cache_key = 'coupons_stats';
-
-	/**
-	 * Assign report columns once full table name has been assigned.
-	 */
-	protected function assign_report_columns() {
-		$table_name           = self::get_db_table_name();
-		$this->report_columns = array(
-			'amount'        => 'SUM(discount_amount) as amount',
-			'coupons_count' => 'COUNT(DISTINCT coupon_id) as coupons_count',
-			'orders_count'  => "COUNT(DISTINCT {$table_name}.order_id) as orders_count",
-		);
+	public function __construct() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
+		// Avoid ambigious column order_id in SQL query.
+		$this->report_columns['orders_count'] = str_replace( 'order_id', $table_name . '.order_id', $this->report_columns['orders_count'] );
 	}
 
 	/**
 	 * Updates the database query with parameters used for Products Stats report: categories and order status.
 	 *
 	 * @param array $query_args       Query arguments supplied by the user.
+	 * @param array $totals_params    SQL parameters for the totals query.
+	 * @param array $intervals_params SQL parameters for the intervals query.
 	 */
-	protected function update_sql_query_params( $query_args ) {
+	protected function update_sql_query_params( $query_args, &$totals_params, &$intervals_params ) {
 		global $wpdb;
 
-		$clauses = array(
-			'where' => '',
-			'join'  => '',
-		);
+		$coupons_where_clause = '';
+		$coupons_from_clause  = '';
 
-		$order_coupon_lookup_table = self::get_db_table_name();
+		$order_coupon_lookup_table = $wpdb->prefix . self::TABLE_NAME;
 
-		$included_coupons = $this->get_included_coupons( $query_args, 'coupons' );
+		$included_coupons = $this->get_included_coupons( $query_args );
 		if ( $included_coupons ) {
-			$clauses['where'] .= " AND {$order_coupon_lookup_table}.coupon_id IN ({$included_coupons})";
+			$coupons_where_clause .= " AND {$order_coupon_lookup_table}.coupon_id IN ({$included_coupons})";
 		}
 
 		$order_status_filter = $this->get_status_subquery( $query_args );
 		if ( $order_status_filter ) {
-			$clauses['join']  .= " JOIN {$wpdb->prefix}wc_order_stats ON {$order_coupon_lookup_table}.order_id = {$wpdb->prefix}wc_order_stats.order_id";
-			$clauses['where'] .= " AND ( {$order_status_filter} )";
+			$coupons_from_clause  .= " JOIN {$wpdb->prefix}wc_order_stats ON {$order_coupon_lookup_table}.order_id = {$wpdb->prefix}wc_order_stats.order_id";
+			$coupons_where_clause .= " AND ( {$order_status_filter} )";
 		}
 
-		$this->add_time_period_sql_params( $query_args, $order_coupon_lookup_table );
-		$this->add_intervals_sql_params( $query_args, $order_coupon_lookup_table );
-		$clauses['where_time'] = $this->get_sql_clause( 'where_time' );
+		$totals_params                  = array_merge( $totals_params, $this->get_time_period_sql_params( $query_args, $order_coupon_lookup_table ) );
+		$totals_params['where_clause'] .= $coupons_where_clause;
+		$totals_params['from_clause']  .= $coupons_from_clause;
 
-		$this->interval_query->add_sql_clause( 'limit', $this->get_sql_clause( 'limit' ) );
-		$this->interval_query->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
-		$this->interval_query->add_sql_clause( 'select', $this->get_sql_clause( 'select' ) );
-		$this->interval_query->add_sql_clause( 'select', 'AS time_interval' );
-
-		foreach ( array( 'join', 'where_time', 'where' ) as $clause ) {
-			$this->interval_query->add_sql_clause( $clause, $clauses[ $clause ] );
-			$this->total_query->add_sql_clause( $clause, $clauses[ $clause ] );
-		}
+		$intervals_params                  = array_merge( $intervals_params, $this->get_intervals_sql_params( $query_args, $order_coupon_lookup_table ) );
+		$intervals_params['where_clause'] .= $coupons_where_clause;
+		$intervals_params['from_clause']  .= $coupons_from_clause;
 	}
 
 	/**
@@ -116,7 +97,7 @@ class DataStore extends CouponsDataStore implements DataStoreInterface {
 	public function get_data( $query_args ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		// These defaults are only partially applied when used via REST API, as that has its own defaults.
 		$defaults   = array(
@@ -133,16 +114,10 @@ class DataStore extends CouponsDataStore implements DataStoreInterface {
 		$query_args = wp_parse_args( $query_args, $defaults );
 		$this->normalize_timezones( $query_args, $defaults );
 
-		/*
-		 * We need to get the cache key here because
-		 * parent::update_intervals_sql_params() modifies $query_args.
-		 */
 		$cache_key = $this->get_cache_key( $query_args );
-		$data      = $this->get_cached_data( $cache_key );
+		$data      = wp_cache_get( $cache_key, $this->cache_group );
 
 		if ( false === $data ) {
-			$this->initialize_queries();
-
 			$data = (object) array(
 				'data'    => array(),
 				'total'   => 0,
@@ -153,57 +128,73 @@ class DataStore extends CouponsDataStore implements DataStoreInterface {
 			$selections      = $this->selected_columns( $query_args );
 			$totals_query    = array();
 			$intervals_query = array();
-			$limit_params    = $this->get_limit_sql_params( $query_args );
 			$this->update_sql_query_params( $query_args, $totals_query, $intervals_query );
 
 			$db_intervals = $wpdb->get_col(
-				$this->interval_query->get_query_statement()
+				"SELECT
+							{$intervals_query['select_clause']} AS time_interval
+						FROM
+							{$table_name}
+							{$intervals_query['from_clause']}
+						WHERE
+							1=1
+							{$intervals_query['where_time_clause']}
+							{$intervals_query['where_clause']}
+						GROUP BY
+							time_interval"
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
 			$db_interval_count       = count( $db_intervals );
 			$expected_interval_count = TimeInterval::intervals_between( $query_args['after'], $query_args['before'], $query_args['interval'] );
-			$total_pages             = (int) ceil( $expected_interval_count / $limit_params['per_page'] );
+			$total_pages             = (int) ceil( $expected_interval_count / $intervals_query['per_page'] );
 			if ( $query_args['page'] < 1 || $query_args['page'] > $total_pages ) {
 				return $data;
 			}
 
-			$this->total_query->add_sql_clause( 'select', $selections );
 			$totals = $wpdb->get_results(
-				$this->total_query->get_query_statement(),
+				"SELECT
+						{$selections}
+					FROM
+						{$table_name}
+						{$totals_query['from_clause']}
+					WHERE
+						1=1
+						{$totals_query['where_time_clause']}
+						{$totals_query['where_clause']}",
 				ARRAY_A
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
 			if ( null === $totals ) {
 				return $data;
 			}
-
-			// @todo remove these assignements when refactoring segmenter classes to use query objects.
-			$totals_query          = array(
-				'from_clause'       => $this->total_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $this->total_query->get_sql_clause( 'where_time' ),
-				'where_clause'      => $this->total_query->get_sql_clause( 'where' ),
-			);
-			$intervals_query       = array(
-				'select_clause'     => $this->get_sql_clause( 'select' ),
-				'from_clause'       => $this->interval_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $this->interval_query->get_sql_clause( 'where_time' ),
-				'where_clause'      => $this->interval_query->get_sql_clause( 'where' ),
-				'limit'             => $this->get_sql_clause( 'limit' ),
-			);
 			$segmenter             = new Segmenter( $query_args, $this->report_columns );
 			$totals[0]['segments'] = $segmenter->get_totals_segments( $totals_query, $table_name );
 			$totals                = (object) $this->cast_numbers( $totals[0] );
 
 			// Intervals.
-			$this->update_intervals_sql_params( $query_args, $db_interval_count, $expected_interval_count, $table_name );
-			$this->interval_query->add_sql_clause( 'select', ", MAX({$table_name}.date_created) AS datetime_anchor" );
+			$this->update_intervals_sql_params( $intervals_query, $query_args, $db_interval_count, $expected_interval_count, $table_name );
 
 			if ( '' !== $selections ) {
-				$this->interval_query->add_sql_clause( 'select', ', ' . $selections );
+				$selections = ', ' . $selections;
 			}
 
 			$intervals = $wpdb->get_results(
-				$this->interval_query->get_query_statement(),
+				"SELECT
+							MAX({$table_name}.date_created) AS datetime_anchor,
+							{$intervals_query['select_clause']} AS time_interval
+							{$selections}
+						FROM
+							{$table_name}
+							{$intervals_query['from_clause']}
+						WHERE
+							1=1
+							{$intervals_query['where_time_clause']}
+							{$intervals_query['where_clause']}
+						GROUP BY
+							time_interval
+						ORDER BY
+							{$intervals_query['order_by_clause']}
+						{$intervals_query['limit']}",
 				ARRAY_A
 			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
@@ -219,33 +210,29 @@ class DataStore extends CouponsDataStore implements DataStoreInterface {
 				'page_no'   => (int) $query_args['page'],
 			);
 
-			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $limit_params['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
+			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $intervals_query['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
 				$this->fill_in_missing_intervals( $db_intervals, $query_args['adj_after'], $query_args['adj_before'], $query_args['interval'], $data );
 				$this->sort_intervals( $data, $query_args['orderby'], $query_args['order'] );
-				$this->remove_extra_records( $data, $query_args['page'], $limit_params['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
+				$this->remove_extra_records( $data, $query_args['page'], $intervals_query['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
 			} else {
 				$this->update_interval_boundary_dates( $query_args['after'], $query_args['before'], $query_args['interval'], $data->intervals );
 			}
 			$segmenter->add_intervals_segments( $data, $intervals_query, $table_name );
 			$this->create_interval_subtotals( $data->intervals );
 
-			$this->set_cached_data( $cache_key, $data );
+			wp_cache_set( $cache_key, $data, $this->cache_group );
 		}
 
 		return $data;
 	}
 
 	/**
-	 * Initialize query objects.
+	 * Returns string to be used as cache key for the data.
+	 *
+	 * @param array $params Query parameters.
+	 * @return string
 	 */
-	protected function initialize_queries() {
-		$this->clear_all_clauses();
-		unset( $this->subquery );
-		$this->total_query = new SqlQuery( $this->context . '_total' );
-		$this->total_query->add_sql_clause( 'from', self::get_db_table_name() );
-
-		$this->interval_query = new SqlQuery( $this->context . '_interval' );
-		$this->interval_query->add_sql_clause( 'from', self::get_db_table_name() );
-		$this->interval_query->add_sql_clause( 'group_by', 'time_interval' );
+	protected function get_cache_key( $params ) {
+		return 'woocommerce_' . self::TABLE_NAME . '_stats_' . md5( wp_json_encode( $params ) );
 	}
 }

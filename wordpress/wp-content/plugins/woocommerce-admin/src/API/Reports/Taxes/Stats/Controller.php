@@ -24,7 +24,7 @@ class Controller extends \WC_REST_Reports_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -37,7 +37,7 @@ class Controller extends \WC_REST_Reports_Controller {
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_filter( 'woocommerce_analytics_taxes_stats_select_query', array( $this, 'set_default_report_data' ) );
+		add_filter( 'woocommerce_reports_taxes_stats_select_query', array( $this, 'set_default_report_data' ) );
 	}
 
 	/**
@@ -350,7 +350,7 @@ class Controller extends \WC_REST_Reports_Controller {
 			'enum'              => array(
 				'date',
 				'items_sold',
-				'total_sales',
+				'gross_revenue',
 				'orders_count',
 				'products_count',
 			),

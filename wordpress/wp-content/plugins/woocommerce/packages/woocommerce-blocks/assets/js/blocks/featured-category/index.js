@@ -4,8 +4,6 @@
 import { __ } from '@wordpress/i18n';
 import { InnerBlocks } from '@wordpress/editor';
 import { registerBlockType } from '@wordpress/blocks';
-import { DEFAULT_HEIGHT } from '@woocommerce/block-settings';
-import { IconFolderStar } from '@woocommerce/block-components/icons';
 
 /**
  * Internal dependencies
@@ -13,28 +11,27 @@ import { IconFolderStar } from '@woocommerce/block-components/icons';
 import './style.scss';
 import './editor.scss';
 import Block from './block';
-import { example } from './example';
+import { IconFolderStar } from '../../components/icons';
 
 /**
  * Register and run the "Featured Category" block.
  */
 registerBlockType( 'woocommerce/featured-category', {
-	title: __( 'Featured Category', 'woocommerce' ),
+	title: __( 'Featured Category', 'woo-gutenberg-products-block' ),
 	icon: {
 		src: <IconFolderStar />,
 		foreground: '#96588a',
 	},
 	category: 'woocommerce',
-	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
+	keywords: [ __( 'WooCommerce', 'woo-gutenberg-products-block' ) ],
 	description: __(
 		'Visually highlight a product category and encourage prompt action.',
-		'woocommerce'
+		'woo-gutenberg-products-block'
 	),
 	supports: {
 		align: [ 'wide', 'full' ],
 		html: false,
 	},
-	example,
 	attributes: {
 		/**
 		 * Alignment of content inside block.
@@ -72,7 +69,7 @@ registerBlockType( 'woocommerce/featured-category', {
 		 */
 		height: {
 			type: 'number',
-			default: DEFAULT_HEIGHT,
+			default: wc_product_block_data.default_height,
 		},
 
 		/**
@@ -110,7 +107,7 @@ registerBlockType( 'woocommerce/featured-category', {
 		 */
 		linkText: {
 			type: 'string',
-			default: __( 'Shop now', 'woocommerce' ),
+			default: __( 'Shop now', 'woo-gutenberg-products-block' ),
 		},
 
 		/**
@@ -126,14 +123,6 @@ registerBlockType( 'woocommerce/featured-category', {
 		showDesc: {
 			type: 'boolean',
 			default: true,
-		},
-
-		/**
-		 * Category preview.
-		 */
-		previewCategory: {
-			type: 'object',
-			default: null,
 		},
 	},
 

@@ -20,10 +20,36 @@ class WC_Admin_Notes {
 	const UNSNOOZE_HOOK = 'wc_admin_unsnooze_admin_notes';
 
 	/**
+	 * Action scheduler group.
+	 */
+	const QUEUE_GROUP = 'wc-admin-notes';
+
+	/**
+	 * Queue instance.
+	 *
+	 * @var WC_Queue_Interface
+	 */
+	protected static $queue = null;
+
+	/**
+	 * Get queue instance.
+	 *
+	 * @return WC_Queue_Interface
+	 */
+	public static function queue() {
+		if ( is_null( self::$queue ) ) {
+			self::$queue = WC()->queue();
+		}
+
+		return self::$queue;
+	}
+
+	/**
 	 * Hook appropriate actions.
 	 */
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'schedule_unsnooze_notes' ) );
+		add_action( self::UNSNOOZE_HOOK, array( __CLASS__, 'unsnooze_notes' ) );
 	}
 
 	/**
@@ -128,15 +154,32 @@ class WC_Admin_Notes {
 	 * Schedule unsnooze notes event.
 	 */
 	public static function schedule_unsnooze_notes() {
-		if ( ! wp_next_scheduled( self::UNSNOOZE_HOOK ) ) {
-			wp_schedule_event( time() + 5, 'hourly', self::UNSNOOZE_HOOK );
+
+		$snooze_checked_transient_key = sprintf( '%s_checked', self::UNSNOOZE_HOOK );
+
+		if ( 'yes' !== get_transient( $snooze_checked_transient_key ) ) {
+			$queue = WC()->queue();
+			$next  = $queue->get_next( self::UNSNOOZE_HOOK );
+
+			if ( ! $next ) {
+				$queue->schedule_recurring( time(), HOUR_IN_SECONDS, self::UNSNOOZE_HOOK, array(), self::QUEUE_GROUP );
+			}
+			set_transient( $snooze_checked_transient_key, 'yes', HOUR_IN_SECONDS );
 		}
 	}
 
 	/**
-	 * Unschedule unsnooze notes event.
+	 * Clears all queued actions.
 	 */
 	public static function clear_queued_actions() {
-		wp_clear_scheduled_hook( self::UNSNOOZE_HOOK );
+		$store = \ActionScheduler::store();
+
+		if ( is_a( $store, 'Automattic\WooCommerce\Admin\Overrides\WPPostStore' ) ) {
+			// If we're using our data store, call our bespoke deletion method.
+			$action_types = array( self::UNSNOOZE_HOOK );
+			$store->clear_pending_wcadmin_actions( $action_types );
+		} else {
+			self::queue()->cancel_all( null, array(), self::QUEUE_GROUP );
+		}
 	}
 }

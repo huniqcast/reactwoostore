@@ -4,22 +4,24 @@
  *
  * Registers Coupon WPObject type and queries
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.0.1
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPObject;
 
 use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
+use WPGraphQL\Type\WPObjectType;
 use WPGraphQL\WooCommerce\Data\Factory;
+use WPGraphQL\WooCommerce\Model\Coupon;
 
 /**
  * Class Coupon_Type
  */
 class Coupon_Type {
-
 	/**
 	 * Register Coupon type and queries to the WPGraphQL schema
 	 */
@@ -123,7 +125,7 @@ class Coupon_Type {
 						'description' => __( 'Type of ID being used identify coupon', 'wp-graphql-woocommerce' ),
 					),
 				),
-				'resolve'     => function ( $source, array $args, AppContext $context ) {
+				'resolve'     => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$id = isset( $args['id'] ) ? $args['id'] : null;
 					$id_type = isset( $args['idType'] ) ? $args['idType'] : 'global_id';
 
@@ -147,10 +149,10 @@ class Coupon_Type {
 
 					if ( empty( $coupon_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No coupon ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No coupon ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $coupon_id )->post_type !== 'shop_coupon' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No coupon exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No coupon exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
 					return Factory::resolve_crud_object( $coupon_id, $context );
@@ -188,7 +190,7 @@ class Coupon_Type {
 						'description' => __( 'Get the coupon by its code', 'wp-graphql-woocommerce' ),
 					),
 				),
-				'resolve'           => function( $source, array $args, AppContext $context ) {
+				'resolve'           => function( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$coupon_id = null;
 					if ( ! empty( $args['id'] ) ) {
 						$id_components = Relay::fromGlobalId( $args['id'] );
@@ -211,10 +213,10 @@ class Coupon_Type {
 
 					if ( empty( $coupon_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No coupon ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No coupon ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $coupon_id )->post_type !== 'shop_coupon' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No coupon exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No coupon exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
 					return Factory::resolve_crud_object( $coupon_id, $context );

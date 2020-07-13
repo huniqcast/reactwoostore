@@ -11,22 +11,20 @@ namespace Automattic\WooCommerce\Admin\API\Reports\Stock;
 
 defined( 'ABSPATH' ) || exit;
 
-use \Automattic\WooCommerce\Admin\API\Reports\ExportableInterface;
-
 /**
  * REST API Reports stock controller class.
  *
  * @package WooCommerce/API
  * @extends WC_REST_Reports_Controller
  */
-class Controller extends \WC_REST_Reports_Controller implements ExportableInterface {
+class Controller extends \WC_REST_Reports_Controller {
 
 	/**
 	 * Endpoint namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Route base.
@@ -290,7 +288,7 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		$data = array(
 			'id'               => $product->get_id(),
 			'parent_id'        => $product->get_parent_id(),
-			'name'             => wp_strip_all_tags( $product->get_name() ),
+			'name'             => $product->get_name(),
 			'sku'              => $product->get_sku(),
 			'stock_status'     => $product->get_stock_status(),
 			'stock_quantity'   => (float) $product->get_stock_quantity(),
@@ -515,34 +513,5 @@ class Controller extends \WC_REST_Reports_Controller implements ExportableInterf
 		);
 
 		return $params;
-	}
-
-	/**
-	 * Get the column names for export.
-	 *
-	 * @return array Key value pair of Column ID => Label.
-	 */
-	public function get_export_columns() {
-		return array(
-			'title'          => __( 'Product / Variation', 'woocommerce-admin' ),
-			'sku'            => __( 'SKU', 'woocommerce-admin' ),
-			'stock_status'   => __( 'Status', 'woocommerce-admin' ),
-			'stock_quantity' => __( 'Stock', 'woocommerce-admin' ),
-		);
-	}
-
-	/**
-	 * Get the column values for export.
-	 *
-	 * @param array $item Single report item/row.
-	 * @return array Key value pair of Column ID => Row Value.
-	 */
-	public function prepare_item_for_export( $item ) {
-		return array(
-			'title'          => $item['name'],
-			'sku'            => $item['sku'],
-			'stock_status'   => $item['stock_status'],
-			'stock_quantity' => $item['stock_quantity'],
-		);
 	}
 }

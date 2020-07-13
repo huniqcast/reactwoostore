@@ -101,12 +101,10 @@ function wc_get_endpoint_url( $endpoint, $value = '', $permalink = '' ) {
 		} else {
 			$query_string = '';
 		}
-		$url = trailingslashit( $permalink );
+		$url = trailingslashit( $permalink ) . trailingslashit( $endpoint );
 
 		if ( $value ) {
-			$url .= trailingslashit( $endpoint ) . user_trailingslashit( $value );
-		} else {
-			$url .= user_trailingslashit( $endpoint );
+			$url .= trailingslashit( $value );
 		}
 
 		$url .= $query_string;

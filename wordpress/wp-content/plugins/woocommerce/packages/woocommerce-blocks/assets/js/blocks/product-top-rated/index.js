@@ -11,32 +11,25 @@ import { without } from 'lodash';
  */
 import Block from './block';
 import { deprecatedConvertToShortcode } from '../../utils/deprecations';
-import sharedAttributes, {
-	sharedAttributeBlockTypes,
-} from '../../utils/shared-attributes';
+import sharedAttributes, { sharedAttributeBlockTypes } from '../../utils/shared-attributes';
 
 const blockTypeName = 'woocommerce/product-top-rated';
 
 registerBlockType( blockTypeName, {
-	title: __( 'Top Rated Products', 'woocommerce' ),
+	title: __( 'Top Rated Products', 'woo-gutenberg-products-block' ),
 	icon: {
 		src: <Gridicon icon="trophy" />,
 		foreground: '#96588a',
 	},
 	category: 'woocommerce',
-	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
+	keywords: [ __( 'WooCommerce', 'woo-gutenberg-products-block' ) ],
 	description: __(
 		'Display a grid of your top rated products.',
-		'woocommerce'
+		'woo-gutenberg-products-block'
 	),
 	supports: {
 		align: [ 'wide', 'full' ],
 		html: false,
-	},
-	example: {
-		attributes: {
-			isPreview: true,
-		},
 	},
 	attributes: {
 		...sharedAttributes,
@@ -47,8 +40,10 @@ registerBlockType( blockTypeName, {
 			{
 				type: 'block',
 				blocks: without( sharedAttributeBlockTypes, blockTypeName ),
-				transform: ( attributes ) =>
-					createBlock( 'woocommerce/product-top-rated', attributes ),
+				transform: ( attributes ) => createBlock(
+					'woocommerce/product-top-rated',
+					attributes
+				),
 			},
 		],
 	},

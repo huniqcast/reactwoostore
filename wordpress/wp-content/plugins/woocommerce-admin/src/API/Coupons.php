@@ -24,7 +24,7 @@ class Coupons extends \WC_REST_Coupons_Controller {
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'wc-analytics';
+	protected $namespace = 'wc/v4';
 
 	/**
 	 * Get the query params for collections.
@@ -84,8 +84,9 @@ class Coupons extends \WC_REST_Coupons_Controller {
 
 		$search = $wp_query->get( 'search' );
 		if ( $search ) {
-			$code_like = '%' . $wpdb->esc_like( $search ) . '%';
-			$where    .= $wpdb->prepare( "AND {$wpdb->posts}.post_title LIKE %s", $code_like );
+			$search = $wpdb->esc_like( $search );
+			$search = "'%" . $search . "%'";
+			$where .= ' AND ' . $wpdb->posts . '.post_title LIKE ' . $search;
 		}
 
 		return $where;

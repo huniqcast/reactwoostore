@@ -5,7 +5,7 @@
  * From your plugin include this file with:
  * require_once . plugin_dir_path( __FILE__ ) . '/vendor/autoload_packages.php';
  *
- * @package automattic/jetpack-autoloader
+ * @package Automattic\Jetpack\Autoloader
  */
 
 // phpcs:disable PHPCompatibility.LanguageConstructs.NewLanguageConstructs.t_ns_separatorFound
@@ -81,10 +81,8 @@ if ( ! function_exists( __NAMESPACE__ . '\autoloader' ) ) {
 						'Automattic\Jetpack\Connection\Manager',
 						'Automattic\Jetpack\Connection\Manager_Interface',
 						'Automattic\Jetpack\Connection\XMLRPC_Connector',
-						'Jetpack_IXR_Client',
 						'Jetpack_Options',
 						'Jetpack_Signature',
-						'Jetpack_XMLRPC_Server',
 						'Automattic\Jetpack\Sync\Main',
 						'Automattic\Jetpack\Constants',
 						'Automattic\Jetpack\Tracking',
@@ -97,7 +95,7 @@ if ( ! function_exists( __NAMESPACE__ . '\autoloader' ) ) {
 						esc_html( $class_name ),
 						sprintf(
 							/* translators: %s Name of a PHP Class */
-							esc_html__( 'Not all plugins have loaded yet but we requested the class %s', 'woocommerce' ),
+							esc_html__( 'Not all plugins have loaded yet but we requested the class %s', 'jetpack' ),
 							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 							$class_name
 						),

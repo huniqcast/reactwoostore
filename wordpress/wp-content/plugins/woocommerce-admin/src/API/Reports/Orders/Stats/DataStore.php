@@ -12,8 +12,6 @@ defined( 'ABSPATH' ) || exit;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStore as ReportsDataStore;
 use \Automattic\WooCommerce\Admin\API\Reports\DataStoreInterface;
 use \Automattic\WooCommerce\Admin\API\Reports\TimeInterval;
-use \Automattic\WooCommerce\Admin\API\Reports\SqlQuery;
-use \Automattic\WooCommerce\Admin\API\Reports\Cache as ReportsCache;
 
 /**
  * API\Reports\Orders\Stats\DataStore.
@@ -25,19 +23,12 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 *
 	 * @var string
 	 */
-	protected static $table_name = 'wc_order_stats';
+	const TABLE_NAME = 'wc_order_stats';
 
 	/**
 	 * Cron event name.
 	 */
 	const CRON_EVENT = 'wc_order_stats_update';
-
-	/**
-	 * Cache identifier.
-	 *
-	 * @var string
-	 */
-	protected $cache_key = 'orders_stats';
 
 	/**
 	 * Type for each column to cast values correctly later.
@@ -47,8 +38,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	protected $column_types = array(
 		'orders_count'            => 'intval',
 		'num_items_sold'          => 'intval',
-		'gross_sales'             => 'floatval',
-		'total_sales'             => 'floatval',
+		'gross_revenue'           => 'floatval',
 		'coupons'                 => 'floatval',
 		'coupons_count'           => 'intval',
 		'refunds'                 => 'floatval',
@@ -64,35 +54,26 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	);
 
 	/**
-	 * Data store context used to pass to filters.
+	 * SQL definition for each column.
 	 *
-	 * @var string
+	 * @var array
 	 */
-	protected $context = 'orders_stats';
+	protected $report_columns = array();
 
 	/**
-	 * Assign report columns once full table name has been assigned.
+	 * Constructor
 	 */
-	protected function assign_report_columns() {
-		$table_name = self::get_db_table_name();
+	public function __construct() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 		// Avoid ambigious columns in SQL query.
-		$refunds     = "ABS( SUM( CASE WHEN {$table_name}.net_total < 0 THEN {$table_name}.net_total ELSE 0 END ) )";
-		$gross_sales =
-			"( SUM({$table_name}.total_sales)" .
-			' + COALESCE( SUM(discount_amount), 0 )' . // SUM() all nulls gives null.
-			" - SUM({$table_name}.tax_total)" .
-			" - SUM({$table_name}.shipping_total)" .
-			" + {$refunds}" .
-			' ) as gross_sales';
-
 		$this->report_columns = array(
 			'orders_count'            => "SUM( CASE WHEN {$table_name}.parent_id = 0 THEN 1 ELSE 0 END ) as orders_count",
 			'num_items_sold'          => "SUM({$table_name}.num_items_sold) as num_items_sold",
-			'gross_sales'             => $gross_sales,
-			'total_sales'             => "SUM({$table_name}.total_sales) AS total_sales",
-			'coupons'                 => 'COALESCE( SUM(discount_amount), 0 ) AS coupons', // SUM() all nulls gives null.
-			'coupons_count'           => 'COALESCE( coupons_count, 0 ) as coupons_count',
-			'refunds'                 => "{$refunds} AS refunds",
+			'gross_revenue'           => "SUM( CASE WHEN {$table_name}.gross_total > 0 THEN {$table_name}.gross_total END ) AS gross_revenue",
+			'coupons'                 => 'SUM(discount_amount) AS coupons',
+			'coupons_count'           => 'coupons_count',
+			'refunds'                 => "ABS( SUM( CASE WHEN {$table_name}.gross_total < 0 THEN {$table_name}.gross_total END ) ) AS refunds",
 			'taxes'                   => "SUM({$table_name}.tax_total) AS taxes",
 			'shipping'                => "SUM({$table_name}.shipping_total) AS shipping",
 			'net_revenue'             => "SUM({$table_name}.net_total) AS net_revenue",
@@ -115,82 +96,81 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 * Updates the totals and intervals database queries with parameters used for Orders report: categories, coupons and order status.
 	 *
 	 * @param array $query_args      Query arguments supplied by the user.
+	 * @param array $totals_query    Array of options for totals db query.
+	 * @param array $intervals_query Array of options for intervals db query.
 	 */
-	protected function orders_stats_sql_filter( $query_args ) {
+	protected function orders_stats_sql_filter( $query_args, &$totals_query, &$intervals_query ) {
 		// @todo Performance of all of this?
 		global $wpdb;
 
 		$from_clause        = '';
-		$orders_stats_table = self::get_db_table_name();
-		$product_lookup     = $wpdb->prefix . 'wc_order_product_lookup';
-		$coupon_lookup      = $wpdb->prefix . 'wc_order_coupon_lookup';
-		$tax_rate_lookup    = $wpdb->prefix . 'wc_order_tax_lookup';
+		$orders_stats_table = $wpdb->prefix . self::TABLE_NAME;
 		$operator           = $this->get_match_operator( $query_args );
 
 		$where_filters = array();
 
+		// @todo Maybe move the sql inside the get_included/excluded functions?
 		// Products filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$product_lookup,
-			'product_id',
-			'IN',
-			$this->get_included_products( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$product_lookup,
-			'product_id',
-			'NOT IN',
-			$this->get_excluded_products( $query_args )
-		);
-
-		// Coupons filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$coupon_lookup,
-			'coupon_id',
-			'IN',
-			$this->get_included_coupons( $query_args )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$coupon_lookup,
-			'coupon_id',
-			'NOT IN',
-			$this->get_excluded_coupons( $query_args )
-		);
-
-		// Tax rate filters.
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$tax_rate_lookup,
-			'tax_rate_id',
-			'IN',
-			implode( ',', $query_args['tax_rate_includes'] )
-		);
-		$where_filters[] = $this->get_object_where_filter(
-			$orders_stats_table,
-			'order_id',
-			$tax_rate_lookup,
-			'tax_rate_id',
-			'NOT IN',
-			implode( ',', $query_args['tax_rate_excludes'] )
-		);
-
-		$where_filters[] = $this->get_customer_subquery( $query_args );
-		$refund_subquery = $this->get_refund_subquery( $query_args );
-		$from_clause    .= $refund_subquery['from_clause'];
-		if ( $refund_subquery['where_clause'] ) {
-			$where_filters[] = $refund_subquery['where_clause'];
+		$included_products = $this->get_included_products( $query_args );
+		$excluded_products = $this->get_excluded_products( $query_args );
+		if ( $included_products ) {
+			$where_filters[] = " {$orders_stats_table}.order_id IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}wc_order_product_lookup.order_id
+			FROM
+				{$wpdb->prefix}wc_order_product_lookup
+			WHERE
+				{$wpdb->prefix}wc_order_product_lookup.product_id IN ({$included_products})
+			)";
 		}
 
-		$where_filters   = array_filter( $where_filters );
+		if ( $excluded_products ) {
+			$where_filters[] = " {$orders_stats_table}.order_id NOT IN (
+			SELECT
+				DISTINCT {$wpdb->prefix}wc_order_product_lookup.order_id
+			FROM
+				{$wpdb->prefix}wc_order_product_lookup
+			WHERE
+				{$wpdb->prefix}wc_order_product_lookup.product_id IN ({$excluded_products})
+			)";
+		}
+
+		// Coupons filters.
+		$included_coupons = $this->get_included_coupons( $query_args );
+		$excluded_coupons = $this->get_excluded_coupons( $query_args );
+		if ( $included_coupons ) {
+			$where_filters[] = " {$orders_stats_table}.order_id IN (
+				SELECT
+					DISTINCT {$wpdb->prefix}wc_order_coupon_lookup.order_id
+				FROM
+					{$wpdb->prefix}wc_order_coupon_lookup
+				WHERE
+					{$wpdb->prefix}wc_order_coupon_lookup.coupon_id IN ({$included_coupons})
+				)";
+		}
+
+		if ( $excluded_coupons ) {
+			$where_filters[] = " {$orders_stats_table}.order_id NOT IN (
+				SELECT
+					DISTINCT {$wpdb->prefix}wc_order_coupon_lookup.order_id
+				FROM
+					{$wpdb->prefix}wc_order_coupon_lookup
+				WHERE
+					{$wpdb->prefix}wc_order_coupon_lookup.coupon_id IN ({$excluded_coupons})
+				)";
+		}
+
+		$customer_filter = $this->get_customer_subquery( $query_args );
+		if ( $customer_filter ) {
+			$where_filters[] = $customer_filter;
+		}
+
+		$refund_subquery = $this->get_refund_subquery( $query_args );
+		if ( $refund_subquery['where_clause'] ) {
+			$where_filters[] = $refund_subquery['where_clause'];
+			$from_clause    .= $refund_subquery['from_clause'];
+		}
+
 		$where_subclause = implode( " $operator ", $where_filters );
 
 		// Append status filter after to avoid matching ANY on default statuses.
@@ -204,10 +184,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 
 		// To avoid requesting the subqueries twice, the result is applied to all queries passed to the method.
 		if ( $where_subclause ) {
-			$this->total_query->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			$this->total_query->add_sql_clause( 'join', $from_clause );
-			$this->interval_query->add_sql_clause( 'where', "AND ( $where_subclause )" );
-			$this->interval_query->add_sql_clause( 'join', $from_clause );
+			$totals_query['where_clause']    .= " AND ( $where_subclause )";
+			$totals_query['from_clause']     .= $from_clause;
+			$intervals_query['where_clause'] .= " AND ( $where_subclause )";
+			$intervals_query['from_clause']  .= $from_clause;
 		}
 	}
 
@@ -220,45 +200,37 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	public function get_data( $query_args ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		// These defaults are only applied when not using REST API, as the API has its own defaults that overwrite these for most values (except before, after, etc).
 		$defaults   = array(
-			'per_page'          => get_option( 'posts_per_page' ),
-			'page'              => 1,
-			'order'             => 'DESC',
-			'orderby'           => 'date',
-			'before'            => TimeInterval::default_before(),
-			'after'             => TimeInterval::default_after(),
-			'interval'          => 'week',
-			'fields'            => '*',
-			'segmentby'         => '',
+			'per_page'         => get_option( 'posts_per_page' ),
+			'page'             => 1,
+			'order'            => 'DESC',
+			'orderby'          => 'date',
+			'before'           => TimeInterval::default_before(),
+			'after'            => TimeInterval::default_after(),
+			'interval'         => 'week',
+			'fields'           => '*',
+			'segmentby'        => '',
 
-			'match'             => 'all',
-			'status_is'         => array(),
-			'status_is_not'     => array(),
-			'product_includes'  => array(),
-			'product_excludes'  => array(),
-			'coupon_includes'   => array(),
-			'coupon_excludes'   => array(),
-			'tax_rate_includes' => array(),
-			'tax_rate_excludes' => array(),
-			'customer'          => '',
-			'categories'        => array(),
+			'match'            => 'all',
+			'status_is'        => array(),
+			'status_is_not'    => array(),
+			'product_includes' => array(),
+			'product_excludes' => array(),
+			'coupon_includes'  => array(),
+			'coupon_excludes'  => array(),
+			'customer'         => '',
+			'categories'       => array(),
 		);
 		$query_args = wp_parse_args( $query_args, $defaults );
 		$this->normalize_timezones( $query_args, $defaults );
 
-		/*
-		 * We need to get the cache key here because
-		 * parent::update_intervals_sql_params() modifies $query_args.
-		 */
 		$cache_key = $this->get_cache_key( $query_args );
-		$data      = $this->get_cached_data( $cache_key );
+		$data      = wp_cache_get( $cache_key, $this->cache_group );
 
 		if ( false === $data ) {
-			$this->initialize_queries();
-
 			$data = (object) array(
 				'totals'    => (object) array(),
 				'intervals' => (object) array(),
@@ -267,13 +239,10 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no'   => 0,
 			);
 
-			$selections = $this->selected_columns( $query_args );
-			$this->add_time_period_sql_params( $query_args, $table_name );
-			$this->add_intervals_sql_params( $query_args, $table_name );
-			$this->add_order_by_sql_params( $query_args );
-			$where_time  = $this->get_sql_clause( 'where_time' );
-			$params      = $this->get_limit_sql_params( $query_args );
-			$coupon_join = "LEFT JOIN (
+			$selections      = $this->selected_columns( $query_args );
+			$totals_query    = $this->get_time_period_sql_params( $query_args, $table_name );
+			$intervals_query = $this->get_intervals_sql_params( $query_args, $table_name );
+			$coupon_join     = "LEFT JOIN (
 						SELECT
 							order_id,
 							SUM(discount_amount) AS discount_amount,
@@ -286,69 +255,85 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 						ON order_coupon_lookup.order_id = {$wpdb->prefix}wc_order_stats.order_id";
 
 			// Additional filtering for Orders report.
-			$this->orders_stats_sql_filter( $query_args );
-			$this->total_query->add_sql_clause( 'select', $selections );
-			$this->total_query->add_sql_clause( 'left_join', $coupon_join );
-			$this->total_query->add_sql_clause( 'where_time', $where_time );
-			$totals = $wpdb->get_results(
-				$this->total_query->get_query_statement(),
-				ARRAY_A
-			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
-			if ( null === $totals ) {
-				return new WP_Error( 'woocommerce_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ) );
-			}
+			$this->orders_stats_sql_filter( $query_args, $totals_query, $intervals_query );
 
-			// @todo Remove these assignements when refactoring segmenter classes to use query objects.
-			$totals_query    = array(
-				'from_clause'       => $this->total_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $where_time,
-				'where_clause'      => $this->total_query->get_sql_clause( 'where' ),
-			);
-			$intervals_query = array(
-				'select_clause'     => $this->get_sql_clause( 'select' ),
-				'from_clause'       => $this->interval_query->get_sql_clause( 'join' ),
-				'where_time_clause' => $where_time,
-				'where_clause'      => $this->interval_query->get_sql_clause( 'where' ),
-				'limit'             => $this->get_sql_clause( 'limit' ),
-			);
+			$totals = $wpdb->get_results(
+				"SELECT
+						{$selections}
+					FROM
+						{$table_name}
+						{$totals_query['from_clause']}
+						{$coupon_join}
+					WHERE
+						1=1
+						{$totals_query['where_time_clause']}
+						{$totals_query['where_clause']}",
+				ARRAY_A
+			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
+			if ( null === $totals ) {
+				return new WP_Error( 'woocommerce_reports_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ) );
+			}
 
 			$unique_products            = $this->get_unique_product_count( $totals_query['from_clause'], $totals_query['where_time_clause'], $totals_query['where_clause'] );
 			$totals[0]['products']      = $unique_products;
-			$segmenter                  = new Segmenter( $query_args, $this->report_columns );
+			$segmenter                   = new Segmenter( $query_args, $this->report_columns );
 			$unique_coupons             = $this->get_unique_coupon_count( $totals_query['from_clause'], $totals_query['where_time_clause'], $totals_query['where_clause'] );
 			$totals[0]['coupons_count'] = $unique_coupons;
 			$totals[0]['segments']      = $segmenter->get_totals_segments( $totals_query, $table_name );
 			$totals                     = (object) $this->cast_numbers( $totals[0] );
 
-			$this->interval_query->add_sql_clause( 'select', $this->get_sql_clause( 'select' ) . ' AS time_interval' );
-			$this->interval_query->add_sql_clause( 'left_join', $coupon_join );
-			$this->interval_query->add_sql_clause( 'where_time', $where_time );
 			$db_intervals = $wpdb->get_col(
-				$this->interval_query->get_query_statement()
-			); // phpcs:ignore cache ok, DB call ok, , unprepared SQL ok.
+				"SELECT
+							{$intervals_query['select_clause']} AS time_interval
+						FROM
+							{$table_name}
+							{$intervals_query['from_clause']}
+							{$coupon_join}
+						WHERE
+							1=1
+							{$intervals_query['where_time_clause']}
+							{$intervals_query['where_clause']}
+						GROUP BY
+							time_interval"
+			); // WPCS: cache ok, DB call ok, , unprepared SQL ok.
 
 			$db_interval_count       = count( $db_intervals );
 			$expected_interval_count = TimeInterval::intervals_between( $query_args['after'], $query_args['before'], $query_args['interval'] );
-			$total_pages             = (int) ceil( $expected_interval_count / $params['per_page'] );
+			$total_pages             = (int) ceil( $expected_interval_count / $intervals_query['per_page'] );
 
 			if ( $query_args['page'] < 1 || $query_args['page'] > $total_pages ) {
 				return $data;
 			}
 
-			$this->update_intervals_sql_params( $query_args, $db_interval_count, $expected_interval_count, $table_name );
-			$this->interval_query->add_sql_clause( 'order_by', $this->get_sql_clause( 'order_by' ) );
-			$this->interval_query->add_sql_clause( 'limit', $this->get_sql_clause( 'limit' ) );
-			$this->interval_query->add_sql_clause( 'select', ", MAX(${table_name}.date_created) AS datetime_anchor" );
+			$this->update_intervals_sql_params( $intervals_query, $query_args, $db_interval_count, $expected_interval_count, $table_name );
+
 			if ( '' !== $selections ) {
-				$this->interval_query->add_sql_clause( 'select', ', ' . $selections );
+				$selections = ', ' . $selections;
 			}
+
 			$intervals = $wpdb->get_results(
-				$this->interval_query->get_query_statement(),
+				"SELECT
+							MAX({$table_name}.date_created) AS datetime_anchor,
+							{$intervals_query['select_clause']} AS time_interval
+							{$selections}
+						FROM
+							{$table_name}
+							{$intervals_query['from_clause']}
+							{$coupon_join}
+						WHERE
+							1=1
+							{$intervals_query['where_time_clause']}
+							{$intervals_query['where_clause']}
+						GROUP BY
+							time_interval
+						ORDER BY
+							{$intervals_query['order_by_clause']}
+						{$intervals_query['limit']}",
 				ARRAY_A
-			); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
+			); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 
 			if ( null === $intervals ) {
-				return new \WP_Error( 'woocommerce_analytics_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ) );
+				return new \WP_Error( 'woocommerce_reports_revenue_result_failed', __( 'Sorry, fetching revenue data failed.', 'woocommerce-admin' ) );
 			}
 
 			if ( isset( $intervals[0] ) ) {
@@ -364,17 +349,17 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 				'page_no'   => (int) $query_args['page'],
 			);
 
-			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $params['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
+			if ( TimeInterval::intervals_missing( $expected_interval_count, $db_interval_count, $intervals_query['per_page'], $query_args['page'], $query_args['order'], $query_args['orderby'], count( $intervals ) ) ) {
 				$this->fill_in_missing_intervals( $db_intervals, $query_args['adj_after'], $query_args['adj_before'], $query_args['interval'], $data );
 				$this->sort_intervals( $data, $query_args['orderby'], $query_args['order'] );
-				$this->remove_extra_records( $data, $query_args['page'], $params['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
+				$this->remove_extra_records( $data, $query_args['page'], $intervals_query['per_page'], $db_interval_count, $expected_interval_count, $query_args['orderby'], $query_args['order'] );
 			} else {
 				$this->update_interval_boundary_dates( $query_args['after'], $query_args['before'], $query_args['interval'], $data->intervals );
 			}
 			$segmenter->add_intervals_segments( $data, $intervals_query, $table_name );
 			$this->create_interval_subtotals( $data->intervals );
 
-			$this->set_cached_data( $cache_key, $data );
+			wp_cache_set( $cache_key, $data, $this->cache_group );
 		}
 
 		return $data;
@@ -391,7 +376,8 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	public function get_unique_product_count( $from_clause, $where_time_clause, $where_clause ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
+
 		return $wpdb->get_var(
 			"SELECT
 					COUNT( DISTINCT {$wpdb->prefix}wc_order_product_lookup.product_id )
@@ -402,7 +388,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 					1=1
 					{$where_time_clause}
 					{$where_clause}"
-		); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
+		); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 	}
 
 	/**
@@ -416,7 +402,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	public function get_unique_coupon_count( $from_clause, $where_time_clause, $where_clause ) {
 		global $wpdb;
 
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 		return $wpdb->get_var(
 			"SELECT
 					COUNT(DISTINCT coupon_id)
@@ -427,7 +413,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 					1=1
 					{$where_time_clause}
 					{$where_clause}"
-		); // phpcs:ignore cache ok, DB call ok, unprepared SQL ok.
+		); // WPCS: cache ok, DB call ok, unprepared SQL ok.
 	}
 
 	/**
@@ -457,7 +443,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	public static function update( $order ) {
 		global $wpdb;
-		$table_name = self::get_db_table_name();
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		if ( ! $order->get_id() || ! $order->get_date_created() ) {
 			return -1;
@@ -469,7 +455,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 			'date_created'       => $order->get_date_created()->date( 'Y-m-d H:i:s' ),
 			'date_created_gmt'   => gmdate( 'Y-m-d H:i:s', $order->get_date_created()->getTimestamp() ),
 			'num_items_sold'     => self::get_num_items_sold( $order ),
-			'total_sales'        => $order->get_total(),
+			'gross_total'        => $order->get_total(),
 			'tax_total'          => $order->get_total_tax(),
 			'shipping_total'     => $order->get_shipping_total(),
 			'net_total'          => self::get_net_total( $order ),
@@ -510,7 +496,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 		 *
 		 * @param int $order_id Order ID.
 		 */
-		do_action( 'woocommerce_analytics_update_order_stats', $order->get_id() );
+		do_action( 'woocommerce_reports_update_order_stats', $order->get_id() );
 
 		// Check the rows affected for success. Using REPLACE can affect 2 rows if the row already exists.
 		return ( 1 === $result || 2 === $result );
@@ -523,21 +509,26 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	public static function delete_order( $post_id ) {
 		global $wpdb;
-		$order_id = (int) $post_id;
+		$order_id   = (int) $post_id;
+		$table_name = $wpdb->prefix . self::TABLE_NAME;
 
 		if ( 'shop_order' !== get_post_type( $order_id ) && 'shop_order_refund' !== get_post_type( $order_id ) ) {
 			return;
 		}
 
-		$wpdb->delete( self::get_db_table_name(), array( 'order_id' => $order_id ) );
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM ${table_name} WHERE order_id = %d",
+				$order_id
+			)
+		);
+
 		/**
 		 * Fires when orders stats are deleted.
 		 *
 		 * @param int $order_id Order ID.
 		 */
-		do_action( 'woocommerce_analytics_delete_order_stats', $order_id );
-
-		ReportsCache::invalidate();
+		do_action( 'woocommerce_reports_delete_order_stats', $order_id );
 	}
 
 
@@ -629,7 +620,7 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	 */
 	protected static function set_customer_first_order( $customer_id, $order_id ) {
 		global $wpdb;
-		$orders_stats_table = self::get_db_table_name();
+		$orders_stats_table = $wpdb->prefix . self::TABLE_NAME;
 
 		$wpdb->query(
 			$wpdb->prepare(
@@ -641,16 +632,12 @@ class DataStore extends ReportsDataStore implements DataStoreInterface {
 	}
 
 	/**
-	 * Initialize query objects.
+	 * Returns string to be used as cache key for the data.
+	 *
+	 * @param array $params Query parameters.
+	 * @return string
 	 */
-	protected function initialize_queries() {
-		$this->clear_all_clauses();
-		unset( $this->subquery );
-		$this->total_query = new SqlQuery( $this->context . '_total' );
-		$this->total_query->add_sql_clause( 'from', self::get_db_table_name() );
-
-		$this->interval_query = new SqlQuery( $this->context . '_interval' );
-		$this->interval_query->add_sql_clause( 'from', self::get_db_table_name() );
-		$this->interval_query->add_sql_clause( 'group_by', 'time_interval' );
+	protected function get_cache_key( $params ) {
+		return 'woocommerce_' . self::TABLE_NAME . '_stats_' . md5( wp_json_encode( $params ) );
 	}
 }

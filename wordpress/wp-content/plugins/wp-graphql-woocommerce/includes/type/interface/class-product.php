@@ -4,24 +4,23 @@
  *
  * Registers Product interface.
  *
- * @package WPGraphQL\WooCommerce\Type\WPInterface
+ * @package \WPGraphQL\WooCommerce\Type\WPInterface
  * @since   0.3.0
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPInterface;
 
 use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQLRelay\Relay;
 use WPGraphQL\AppContext;
 use WPGraphQL\Data\DataSource;
 use WPGraphQL\WooCommerce\Data\Factory;
-use WP_GraphQL_WooCommerce;
 
 /**
  * Class - Product
  */
 class Product {
-
 	/**
 	 * Registers the "Product" interface.
 	 *
@@ -34,7 +33,7 @@ class Product {
 				'description' => __( 'Product object', 'wp-graphql-woocommerce' ),
 				'fields'      => self::get_fields(),
 				'resolveType' => function( $value ) use ( &$type_registry ) {
-					$possible_types = WP_GraphQL_WooCommerce::get_enabled_product_types();
+					$possible_types = \WP_GraphQL_WooCommerce::get_enabled_product_types();
 					if ( isset( $possible_types[ $value->type ] ) ) {
 						return $type_registry->get_type( $possible_types[ $value->type ] );
 					}
@@ -65,7 +64,7 @@ class Product {
 						'description' => __( 'Type of ID being used identify product', 'wp-graphql-woocommerce' ),
 					),
 				),
-				'resolve'     => function ( $source, array $args, AppContext $context ) {
+				'resolve'     => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$id = isset( $args['id'] ) ? $args['id'] : null;
 					$id_type = isset( $args['idType'] ) ? $args['idType'] : 'global_id';
 
@@ -93,13 +92,15 @@ class Product {
 
 					if ( empty( $product_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s' ), $id_type, $id ) );
 					} elseif ( get_post( $product_id )->post_type !== 'product' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $id ) );
+						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s' ), $id_type, $id ) );
 					}
 
-					return Factory::resolve_crud_object( $product_id, $context );
+					$product = Factory::resolve_crud_object( $product_id, $context );
+
+					return $product;
 				},
 			)
 		);
@@ -138,7 +139,7 @@ class Product {
 						'description' => __( 'Get the product by its sku', 'wp-graphql-woocommerce' ),
 					),
 				),
-				'resolve'           => function ( $source, array $args, AppContext $context ) {
+				'resolve'           => function ( $source, array $args, AppContext $context, ResolveInfo $info ) {
 					$product_id = 0;
 					$id_type = '';
 					if ( ! empty( $args['id'] ) ) {
@@ -162,13 +163,15 @@ class Product {
 
 					if ( empty( $product_id ) ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $product_id ) );
+						throw new UserError( sprintf( __( 'No product ID was found corresponding to the %1$s: %2$s' ), $id_type, $product_id ) );
 					} elseif ( get_post( $product_id )->post_type !== 'product' ) {
 						/* translators: %1$s: ID type, %2$s: ID value */
-						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s', 'wp-graphql-woocommerce' ), $id_type, $product_id ) );
+						throw new UserError( sprintf( __( 'No product exists with the %1$s: %2$s' ), $id_type, $product_id ) );
 					}
 
-					return Factory::resolve_crud_object( $product_id, $context );
+					$product = Factory::resolve_crud_object( $product_id, $context );
+
+					return $product;
 				},
 			)
 		);
@@ -318,7 +321,7 @@ class Product {
 			),
 			'link'              => array(
 				'type'        => 'String',
-				'description' => __( 'The permalink of the post', 'wp-graphql-woocommerce' ),
+				'description' => __( 'The permalink of the post', 'wp-graphql' ),
 				'resolve'     => function( $source ) {
 					$permalink = get_post_permalink( $source->ID );
 					return ! empty( $permalink ) ? $permalink : null;

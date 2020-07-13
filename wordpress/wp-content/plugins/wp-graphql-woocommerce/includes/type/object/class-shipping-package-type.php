@@ -4,19 +4,25 @@
  *
  * Registers ShippingPackage WPObject type
  *
- * @package WPGraphQL\WooCommerce\Type\WPObject
+ * @package \WPGraphQL\WooCommerce\Type\WPObject
  * @since   0.3.2
  */
 
 namespace WPGraphQL\WooCommerce\Type\WPObject;
 
+use GraphQL\Error\UserError;
+use GraphQL\Type\Definition\ResolveInfo;
+use GraphQLRelay\Relay;
+use WPGraphQL\AppContext;
+use WPGraphQL\WooCommerce\Data\Factory;
+use WPGraphQL\Type\WPObjectType;
+
 /**
  * Class Shipping_Package_Type
  */
 class Shipping_Package_Type {
-
 	/**
-	 * Registers type.
+	 * Registers type
 	 */
 	public static function register() {
 		register_graphql_object_type(
@@ -32,8 +38,6 @@ class Shipping_Package_Type {
 							foreach ( $source['contents'] as $item_id => $values ) {
 								$product_names[ $item_id ] = $values['data']->get_name() . ' &times;' . $values['quantity'];
 							}
-
-							// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 							$product_names = apply_filters( 'woocommerce_shipping_package_details_array', $product_names, $source );
 
 							return implode( ', ', $product_names );
@@ -50,7 +54,6 @@ class Shipping_Package_Type {
 						'type'        => 'Boolean',
 						'description' => __( 'This shipping package supports the shipping calculator.', 'wp-graphql-woocommerce' ),
 						'resolve'     => function( $source ) {
-							// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 							return apply_filters( 'woocommerce_shipping_show_shipping_calculator', true, $source['index'], $source );
 						},
 					),
