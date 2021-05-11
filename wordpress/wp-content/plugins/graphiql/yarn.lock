@@ -1457,7 +1457,7 @@ flat-cache@^1.2.1:
 
 flow-bin@0.68.0:
   version "0.68.0"
-  resolved "http://registry.npmjs.org/flow-bin/-/flow-bin-0.68.0.tgz#86c2d14857d306eb2e85e274f2eebf543564f623"
+  resolved "https://registry.npmjs.org/flow-bin/-/flow-bin-0.68.0.tgz#86c2d14857d306eb2e85e274f2eebf543564f623"
 
 for-in@^1.0.1:
   version "1.0.2"
@@ -1711,6 +1711,12 @@ graphql-language-service-parser@^0.1.0-0:
   dependencies:
     graphql-language-service-types "^0.1.14"
 
+graphql-language-service-parser@^1.2.2:
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/graphql-language-service-parser/-/graphql-language-service-parser-1.9.1.tgz#e982d697d70b6eae8cc798b449f7cb61ea5caf34"
+  dependencies:
+    graphql-language-service-types "^1.8.0"
+
 graphql-language-service-server@^1.0.0-0:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/graphql-language-service-server/-/graphql-language-service-server-1.3.2.tgz#9423ede58a5b7bcaa3bbcb42f39a6c9626f6787d"
@@ -1729,6 +1735,10 @@ graphql-language-service-server@^1.0.0-0:
 graphql-language-service-types@^0.1.0-0, graphql-language-service-types@^0.1.14:
   version "0.1.14"
   resolved "https://registry.yarnpkg.com/graphql-language-service-types/-/graphql-language-service-types-0.1.14.tgz#e6112785fc23ea8222f59a7f00e61b359f263c88"
+
+graphql-language-service-types@^1.2.2, graphql-language-service-types@^1.8.0:
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/graphql-language-service-types/-/graphql-language-service-types-1.8.1.tgz#963810010924f2b5eaea415d5b8eb0b7d42c479b"
 
 graphql-language-service-utils@^1.0.0-0, graphql-language-service-utils@^1.2.2:
   version "1.2.2"
@@ -2255,8 +2265,8 @@ lodash.templatesettings@^4.0.0:
     lodash._reinterpolate "~3.0.0"
 
 lodash@^4.0.0, lodash@^4.1.0, lodash@^4.15.0, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
-  version "4.17.4"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
 
 longest@^1.0.1:
   version "1.0.1"
